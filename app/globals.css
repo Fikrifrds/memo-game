@@ -18,18 +18,68 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@utility perspective-1000 {
-  perspective: 1000px;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@utility transform-style-3d {
-  transform-style: preserve-3d;
-}
+@layer utilities {
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
 
-@utility backface-hidden {
-  backface-visibility: hidden;
-}
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
 
-@utility rotate-y-180 {
-  transform: rotateY(180deg);
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  /* Match celebration animation */
+  @keyframes matchCelebration {
+
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    25% {
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    50% {
+      transform: scale(1.15) rotate(-5deg);
+    }
+
+    75% {
+      transform: scale(1.1) rotate(3deg);
+    }
+  }
+
+  .matched-card {
+    animation: matchCelebration 0.5s ease-out;
+  }
+
+  /* Pulse animation for active player */
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    50% {
+      opacity: 0.9;
+      transform: scale(1.12);
+    }
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }

@@ -3,15 +3,57 @@
 import { useState, useEffect } from "react";
 import Card from "./Card";
 
-// Expanded card images for Hard mode (24 pairs needed)
-const allCardImages = [
-    { src: "🐶", matched: false }, { src: "🐱", matched: false }, { src: "🐭", matched: false }, { src: "🐹", matched: false },
-    { src: "🐰", matched: false }, { src: "🦊", matched: false }, { src: "🐻", matched: false }, { src: "🐼", matched: false },
-    { src: "🐨", matched: false }, { src: "🐯", matched: false }, { src: "🦁", matched: false }, { src: "🐮", matched: false },
-    { src: "🐷", matched: false }, { src: "🐸", matched: false }, { src: "🐵", matched: false }, { src: "🐔", matched: false },
-    { src: "🐧", matched: false }, { src: "🐦", matched: false }, { src: "🐤", matched: false }, { src: "🦆", matched: false },
-    { src: "🦅", matched: false }, { src: "🦉", matched: false }, { src: "🦇", matched: false }, { src: "🐺", matched: false },
-];
+// Theme-based card images
+const THEMES = {
+    animals: {
+        name: "Animals",
+        icon: "🐶",
+        cards: [
+            { src: "🐶", matched: false }, { src: "🐱", matched: false }, { src: "🐭", matched: false }, { src: "🐹", matched: false },
+            { src: "🐰", matched: false }, { src: "🦊", matched: false }, { src: "🐻", matched: false }, { src: "🐼", matched: false },
+            { src: "🐨", matched: false }, { src: "🐯", matched: false }, { src: "🦁", matched: false }, { src: "🐮", matched: false },
+            { src: "🐷", matched: false }, { src: "🐸", matched: false }, { src: "🐵", matched: false }, { src: "🐔", matched: false },
+            { src: "🐧", matched: false }, { src: "🐦", matched: false }, { src: "🐤", matched: false }, { src: "🦆", matched: false },
+            { src: "🦅", matched: false }, { src: "🦉", matched: false }, { src: "🦇", matched: false }, { src: "🐺", matched: false },
+        ]
+    },
+    fruits: {
+        name: "Fruits",
+        icon: "🍎",
+        cards: [
+            { src: "🍎", matched: false }, { src: "🍌", matched: false }, { src: "🍇", matched: false }, { src: "🍊", matched: false },
+            { src: "🍓", matched: false }, { src: "🍉", matched: false }, { src: "🍋", matched: false }, { src: "🍑", matched: false },
+            { src: "🍍", matched: false }, { src: "🥝", matched: false }, { src: "🥥", matched: false }, { src: "🍒", matched: false },
+            { src: "🍈", matched: false }, { src: "🫐", matched: false }, { src: "🥭", matched: false }, { src: "🍏", matched: false },
+            { src: "🥑", matched: false }, { src: "🍐", matched: false }, { src: "🥔", matched: false }, { src: "🍅", matched: false },
+            { src: "🌶️", matched: false }, { src: "🫑", matched: false }, { src: "🥕", matched: false }, { src: "🌽", matched: false },
+        ]
+    },
+    nature: {
+        name: "Nature",
+        icon: "🌸",
+        cards: [
+            { src: "🌸", matched: false }, { src: "🌺", matched: false }, { src: "🌻", matched: false }, { src: "🌷", matched: false },
+            { src: "🌹", matched: false }, { src: "🌼", matched: false }, { src: "🌵", matched: false }, { src: "🌴", matched: false },
+            { src: "🌲", matched: false }, { src: "🌳", matched: false }, { src: "🌾", matched: false }, { src: "🌿", matched: false },
+            { src: "🍀", matched: false }, { src: "🍁", matched: false }, { src: "🍂", matched: false }, { src: "🍃", matched: false },
+            { src: "🌱", matched: false }, { src: "🪴", matched: false }, { src: "🌾", matched: false }, { src: "🌺", matched: false },
+            { src: "🏔️", matched: false }, { src: "⛰️", matched: false }, { src: "🗻", matched: false }, { src: "🏕️", matched: false },
+        ]
+    },
+    space: {
+        name: "Space",
+        icon: "🚀",
+        cards: [
+            { src: "🌎", matched: false }, { src: "🌙", matched: false }, { src: "⭐", matched: false }, { src: "☄️", matched: false },
+            { src: "🪐", matched: false }, { src: "🌟", matched: false }, { src: "💫", matched: false }, { src: "✨", matched: false },
+            { src: "🚀", matched: false }, { src: "🛸", matched: false }, { src: "🌌", matched: false }, { src: "🔭", matched: false },
+            { src: "🌕", matched: false }, { src: "🌖", matched: false }, { src: "🌗", matched: false }, { src: "🌘", matched: false },
+            { src: "🌑", matched: false }, { src: "🌒", matched: false }, { src: "🌓", matched: false }, { src: "🌔", matched: false },
+            { src: "🌍", matched: false }, { src: "🌏", matched: false }, { src: "☀️", matched: false }, { src: "🌠", matched: false },
+        ]
+    }
+};
 
 const DIFFICULTIES = {
     Easy: { pairs: 6, cols: 4 },
@@ -27,11 +69,17 @@ export default function GameBoard() {
     const [choiceTwo, setChoiceTwo] = useState(null);
     const [disabled, setDisabled] = useState(false);
 
+    // Timer state
+    const [startTime, setStartTime] = useState(null);
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [timerInterval, setTimerInterval] = useState(null);
+
     // Setup State
     const [difficulty, setDifficulty] = useState("Easy");
     const [playerNames, setPlayerNames] = useState(["Player 1", "Player 2"]);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [scores, setScores] = useState([0, 0]);
+    const [theme, setTheme] = useState("animals");
 
     // Start Game
     const startGame = () => {
@@ -45,12 +93,50 @@ export default function GameBoard() {
 
         shuffleCards();
         setGameState("playing");
+
+        // Start timer
+        const now = Date.now();
+        setStartTime(now);
+        setElapsedTime(0);
+
+        const interval = setInterval(() => {
+            setElapsedTime(Date.now() - now);
+        }, 100); // Update every 100ms for smooth display
+
+        setTimerInterval(interval);
     };
 
-    // Shuffle Cards based on difficulty
+    // Restart Game (keep same settings)
+    const restartGame = () => {
+        // Clear old timer
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        // Reset game state
+        setGameState("playing"); // Close modal and go back to playing
+        setScores(new Array(playerNames.length).fill(0));
+        setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
+
+        shuffleCards();
+
+        // Start new timer
+        const now = Date.now();
+        setStartTime(now);
+        setElapsedTime(0);
+
+        const interval = setInterval(() => {
+            setElapsedTime(Date.now() - now);
+        }, 100);
+
+        setTimerInterval(interval);
+    };
+
+    // Shuffle Cards based on difficulty and theme
     const shuffleCards = () => {
         const numPairs = DIFFICULTIES[difficulty].pairs;
-        const selectedImages = allCardImages.slice(0, numPairs);
+        const themeCards = THEMES[theme].cards;
+        const selectedImages = themeCards.slice(0, numPairs);
         const shuffledCards = [...selectedImages, ...selectedImages]
             .sort(() => Math.random() - 0.5)
             .map((card) => ({ ...card, id: Math.random() }));
@@ -112,8 +198,22 @@ export default function GameBoard() {
     useEffect(() => {
         if (cards.length > 0 && cards.every((card) => card.matched)) {
             setGameState("finished");
+            // Stop timer when game ends
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                setTimerInterval(null);
+            }
         }
-    }, [cards]);
+    }, [cards, timerInterval]);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        };
+    }, [timerInterval]);
 
     // Setup Handlers
     const addPlayer = () => {
@@ -164,6 +264,30 @@ export default function GameBoard() {
                                     <div className="text-lg">{diff}</div>
                                     <div className={`text-xs mt-1 ${difficulty === diff ? 'text-blue-100' : 'text-gray-400'}`}>
                                         {config.pairs} pairs
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Theme Selection */}
+                    <div className="space-y-3">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                            Card Theme
+                        </label>
+                        <div className="grid grid-cols-4 gap-3">
+                            {Object.entries(THEMES).map(([key, themeData]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setTheme(key)}
+                                    className={`relative py-3 px-2 rounded-xl font-bold transition-all duration-200 ${theme === key
+                                        ? "bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg scale-105 ring-2 ring-purple-400 ring-offset-2"
+                                        : "bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-102"
+                                        }`}
+                                >
+                                    <div className="text-2xl mb-1">{themeData.icon}</div>
+                                    <div className={`text-xs ${theme === key ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        {themeData.name}
                                     </div>
                                 </button>
                             ))}
@@ -239,17 +363,53 @@ export default function GameBoard() {
         8: "grid-cols-6 sm:grid-cols-8",
     }[DIFFICULTIES[difficulty].cols];
 
+    // Format time display
+    const formatTime = (ms) => {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
     return (
         <div className="flex flex-col items-center w-full h-screen max-h-screen overflow-hidden">
             {/* Compact Header */}
             <header className="w-full bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm shrink-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex items-center justify-between gap-6">
-                        {/* Left: Title and Setup */}
+                        {/* Left: Title, Stats, and Controls */}
                         <div className="flex items-center gap-4">
                             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                                 Memo Dami
                             </h1>
+
+                            {/* Stats */}
+                            <div className="hidden sm:flex items-center gap-4">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{formatTime(elapsedTime)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                                    </svg>
+                                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">{turns} moves</span>
+                                </div>
+                            </div>
+
+                            {/* Restart Button */}
+                            <button
+                                onClick={restartGame}
+                                className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Restart
+                            </button>
+
                             <button
                                 onClick={() => setGameState("setup")}
                                 className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
@@ -268,25 +428,30 @@ export default function GameBoard() {
                                 <div
                                     key={index}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 border-2 ${index === currentPlayerIndex
-                                        ? "bg-gradient-to-br from-blue-500 to-purple-600 border-blue-400 shadow-lg scale-105"
-                                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
+                                        ? "bg-gradient-to-br from-blue-500 to-purple-600 border-blue-400 shadow-lg scale-110 animate-pulse"
+                                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60 scale-95"
                                         }`}
                                 >
-                                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${index === currentPlayerIndex
-                                        ? "bg-white/20 text-white"
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${index === currentPlayerIndex
+                                        ? "bg-white/20 text-white ring-2 ring-white/30"
                                         : "bg-gradient-to-br from-blue-400 to-purple-500 text-white"
                                         }`}>
                                         {index + 1}
                                     </div>
                                     <div className="flex flex-col items-start min-w-[60px]">
-                                        <span className={`text-xs font-medium truncate max-w-[100px] ${index === currentPlayerIndex ? "text-white" : "text-gray-600 dark:text-gray-400"
+                                        <span className={`text-xs font-medium truncate max-w-[100px] ${index === currentPlayerIndex ? "text-white font-bold" : "text-gray-600 dark:text-gray-400"
                                             }`}>
                                             {name}
                                         </span>
-                                        <span className={`text-lg font-black leading-none ${index === currentPlayerIndex ? "text-white" : "text-gray-900 dark:text-white"
-                                            }`}>
-                                            {scores[index]}
-                                        </span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className={`text-xl font-black leading-none ${index === currentPlayerIndex ? "text-white" : "text-gray-900 dark:text-white"
+                                                }`}>
+                                                {scores[index]}
+                                            </span>
+                                            {index === currentPlayerIndex && (
+                                                <span className="text-xs text-white/80 font-medium">← Your turn!</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -326,21 +491,39 @@ export default function GameBoard() {
                 gameState === "finished" && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
                         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-md w-full animate-in zoom-in duration-300">
-                            <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                Game Over!
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                                Game Complete!
                             </h2>
+
+                            {/* Game Stats */}
+                            <div className="flex justify-center gap-4 mb-6">
+                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{formatTime(elapsedTime)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                    <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                                    </svg>
+                                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{turns} moves</span>
+                                </div>
+                            </div>
 
                             <div className="space-y-4 mb-8">
                                 {playerNames
                                     .map((name, i) => ({ name, score: scores[i] }))
                                     .sort((a, b) => b.score - a.score)
                                     .map((player, i) => (
-                                        <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                                        <div key={i} className={`flex justify-between items-center p-3 rounded-lg ${i === 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 ring-2 ring-yellow-400' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-bold text-gray-400">#{i + 1}</span>
-                                                <span className="font-semibold">{player.name}</span>
+                                                {i === 0 && <span className="text-2xl">👑</span>}
+                                                <span className={`font-bold ${i === 0 ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-400'}`}>#{i + 1}</span>
+                                                <span className={`font-semibold ${i === 0 ? 'text-yellow-900 dark:text-yellow-100' : ''}`}>{player.name}</span>
                                             </div>
-                                            <span className="font-bold text-xl">{player.score} pairs</span>
+                                            <span className={`font-bold text-xl ${i === 0 ? 'text-yellow-700 dark:text-yellow-300' : ''}`}>{player.score} pairs</span>
                                         </div>
                                     ))}
                             </div>
@@ -350,13 +533,13 @@ export default function GameBoard() {
                                     onClick={() => setGameState("setup")}
                                     className="flex-1 py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 >
-                                    Setup New Game
+                                    New Setup
                                 </button>
                                 <button
-                                    onClick={startGame}
+                                    onClick={restartGame}
                                     className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
                                 >
-                                    Rematch
+                                    Play Again
                                 </button>
                             </div>
                         </div>
