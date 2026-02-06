@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "./Card";
+import { LEARNING_THEMES } from "@/data/learningThemes";
+import { speak } from "@/utils/speech";
 
 const THEMES = {
     farm: {
         name: "Farm",
         icon: "🐄",
         cards: [
-            { src: "🐄", matched: false }, { src: "🐓", matched: false }, { src: "🐖", matched: false }, { src: "🐑", matched: false },
+            { src: "🐄", matched: false }, { src: "🐓", matched: false }, { src: "🦢", matched: false }, { src: "🐑", matched: false },
             { src: "🐴", matched: false }, { src: "🐇", matched: false }, { src: "🐕", matched: false }, { src: "🐈", matched: false },
             { src: "🦆", matched: false }, { src: "🐐", matched: false }, { src: "🦃", matched: false }, { src: "🐝", matched: false },
             { src: "🐛", matched: false }, { src: "🦋", matched: false }, { src: "🐞", matched: false }, { src: "🐌", matched: false },
@@ -73,6 +75,8 @@ const PLAYER_COLORS = [
     { bg: "bg-lime-500", text: "text-lime-700", border: "border-lime-300" },
 ];
 
+const ALL_THEMES = { ...THEMES, ...LEARNING_THEMES };
+
 const MAX_PLAYERS = 10;
 
 function Confetti() {
@@ -135,7 +139,7 @@ export default function GameBoard() {
     }, []);
 
     const saveBestScore = useCallback((time, moves, diff) => {
-        const key = `${diff}-${playerNames.length}p`;
+        const key = `${theme}-${diff}-${playerNames.length}p`;
         const newBest = { ...bestScore };
         const current = newBest[key];
         if (!current || moves < current.moves || (moves === current.moves && time < current.time)) {
@@ -168,11 +172,27 @@ export default function GameBoard() {
         return () => stopTimer();
     }, [stopTimer]);
 
+    const isLearningTheme = ALL_THEMES[theme]?.mode === "learning";
+
     const shuffleCards = useCallback(() => {
         const numPairs = DIFFICULTIES[difficulty].pairs;
-        const themeCards = THEMES[theme].cards;
-        const selectedImages = themeCards.slice(0, numPairs);
-        const shuffledCards = [...selectedImages, ...selectedImages]
+        const themeData = ALL_THEMES[theme];
+        let allCards;
+
+        if (themeData.mode === "learning") {
+            // Learning themes: flatten cardA/cardB pairs
+            const selectedPairs = themeData.pairs.slice(0, numPairs);
+            allCards = selectedPairs.flatMap((pair) => [
+                { ...pair.cardA, pairId: pair.pairId, matched: false },
+                { ...pair.cardB, pairId: pair.pairId, matched: false },
+            ]);
+        } else {
+            // Classic themes: duplicate each card
+            const selectedImages = themeData.cards.slice(0, numPairs);
+            allCards = [...selectedImages, ...selectedImages];
+        }
+
+        const shuffledCards = allCards
             .sort(() => Math.random() - 0.5)
             .map((card) => ({ ...card, id: Math.random() }));
 
@@ -212,20 +232,56 @@ export default function GameBoard() {
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
     };
 
+    const [matchFeedback, setMatchFeedback] = useState(null);
+
     useEffect(() => {
         if (choiceOne && choiceTwo) {
             setDisabled(true);
-            if (choiceOne.src === choiceTwo.src) {
+            // Use pairId for learning themes, src for classic themes
+            const isMatch = choiceOne.pairId
+                ? choiceOne.pairId === choiceTwo.pairId
+                : choiceOne.src === choiceTwo.src;
+
+            if (isMatch) {
+                const matchKey = choiceOne.pairId || choiceOne.src;
                 setCards((prevCards) =>
-                    prevCards.map((card) =>
-                        card.src === choiceOne.src ? { ...card, matched: true } : card
-                    )
+                    prevCards.map((card) => {
+                        const cardKey = card.pairId || card.src;
+                        return cardKey === matchKey ? { ...card, matched: true } : card;
+                    })
                 );
                 setScores(prev => {
                     const newScores = [...prev];
                     newScores[currentPlayerIndex] += 1;
                     return newScores;
                 });
+
+                // Learning mode: TTS + feedback toast
+                if (isLearningTheme && choiceOne.pairId) {
+                    const themeData = ALL_THEMES[theme];
+                    const pair = themeData.pairs.find(p => p.pairId === choiceOne.pairId);
+                    if (pair) {
+                        // Show feedback toast
+                        setMatchFeedback({
+                            pairId: pair.pairId,
+                            cardA: pair.cardA,
+                            cardB: pair.cardB,
+                        });
+                        setTimeout(() => setMatchFeedback(null), 2500);
+
+                        // Speak the word(s)
+                        if (pair.cardA.lang === "en" && pair.cardB.lang === "id") {
+                            // EN-ID: speak English, then Indonesian after a delay
+                            speak(pair.cardA.src, "en-US");
+                            setTimeout(() => speak(pair.cardB.src, "id-ID"), 1200);
+                        } else {
+                            // Word-Picture / Spelling: speak the English word
+                            const textCard = pair.cardA.type === "text" ? pair.cardA : pair.cardB.type === "text" ? pair.cardB : null;
+                            speak(textCard ? textCard.src : pair.pairId);
+                        }
+                    }
+                }
+
                 resetTurn(true);
             } else {
                 setTimeout(() => resetTurn(false), 1000);
@@ -325,7 +381,7 @@ export default function GameBoard() {
                     {/* Theme Selection */}
                     <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                            Theme
+                            Classic Themes
                         </label>
                         <div className="grid grid-cols-4 gap-2">
                             {Object.entries(THEMES).map(([key, themeData]) => (
@@ -339,6 +395,27 @@ export default function GameBoard() {
                                 >
                                     <div className="text-2xl mb-0.5">{themeData.icon}</div>
                                     <div className={`text-xs ${theme === key ? 'text-orange-100' : 'text-amber-500 dark:text-amber-400'}`}>
+                                        {themeData.name}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <label className="block text-xs font-bold text-sky-700/60 dark:text-sky-400/60 uppercase tracking-wider mt-4">
+                            Learn English
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {Object.entries(LEARNING_THEMES).map(([key, themeData]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setTheme(key)}
+                                    className={`relative py-3 px-2 rounded-xl font-bold transition-all duration-200 ${theme === key
+                                        ? "bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-lg shadow-sky-400/25 scale-105 ring-2 ring-sky-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                        : "bg-sky-50 dark:bg-gray-700/50 text-sky-800 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-gray-700 border border-sky-200 dark:border-gray-600"
+                                        }`}
+                                >
+                                    <div className="text-2xl mb-0.5">{themeData.icon}</div>
+                                    <div className={`text-xs ${theme === key ? 'text-sky-100' : 'text-sky-500 dark:text-sky-400'}`}>
                                         {themeData.name}
                                     </div>
                                 </button>
@@ -397,11 +474,11 @@ export default function GameBoard() {
                     </div>
 
                     {/* Best Score Display */}
-                    {bestScore && bestScore[`${difficulty}-${playerNames.length}p`] && (
+                    {bestScore && bestScore[`${theme}-${difficulty}-${playerNames.length}p`] && (
                         <div className="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-300/50 dark:border-yellow-800/30 rounded-xl">
                             <span className="text-sm">⭐</span>
                             <span className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-                                Best: {bestScore[`${difficulty}-${playerNames.length}p`].moves} moves in {formatTime(bestScore[`${difficulty}-${playerNames.length}p`].time)}
+                                Best: {bestScore[`${theme}-${difficulty}-${playerNames.length}p`].moves} moves in {formatTime(bestScore[`${theme}-${difficulty}-${playerNames.length}p`].time)}
                             </span>
                         </div>
                     )}
@@ -534,17 +611,36 @@ export default function GameBoard() {
                     className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-5xl`}
                     style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
                 >
-                    {cards.map((card) => (
+                    {cards.map((card, index) => {
+                        const row = Math.floor(index / cols);
+                        const col = index % cols;
+                        const label = `${String.fromCharCode(65 + row)}${col + 1}`;
+                        return (
                         <Card
                             key={card.id}
                             card={card}
+                            cardNumber={label}
                             handleChoice={handleChoice}
                             flipped={card === choiceOne || card === choiceTwo || card.matched}
                             disabled={disabled}
                         />
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* Match Feedback Toast */}
+            {matchFeedback && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-toastIn">
+                    <div className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-green-300 dark:border-green-700">
+                        <span className="text-2xl">{matchFeedback.cardA.type === "emoji" ? matchFeedback.cardA.src : matchFeedback.cardB.type === "emoji" ? matchFeedback.cardB.src : "✅"}</span>
+                        <div className="text-sm font-bold text-green-700 dark:text-green-300">
+                            {matchFeedback.cardA.src} = {matchFeedback.cardB.src}
+                        </div>
+                        <span className="text-lg">🔊</span>
+                    </div>
+                </div>
+            )}
 
             {/* Win Screen Modal */}
             {gameState === "finished" && (
