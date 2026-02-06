@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy": "npx wrangler pages deploy out --project-name=flipmatch",
+    "deploy": "GITHUB_PAGES=true next build",
     "start": "next start",
     "lint": "eslint"
   },
