@@ -1,20 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "./Card";
 
-// Theme-based card images
 const THEMES = {
-    animals: {
-        name: "Animals",
-        icon: "🐶",
+    farm: {
+        name: "Farm",
+        icon: "🐄",
         cards: [
-            { src: "🐶", matched: false }, { src: "🐱", matched: false }, { src: "🐭", matched: false }, { src: "🐹", matched: false },
-            { src: "🐰", matched: false }, { src: "🦊", matched: false }, { src: "🐻", matched: false }, { src: "🐼", matched: false },
-            { src: "🐨", matched: false }, { src: "🐯", matched: false }, { src: "🦁", matched: false }, { src: "🐮", matched: false },
-            { src: "🐷", matched: false }, { src: "🐸", matched: false }, { src: "🐵", matched: false }, { src: "🐔", matched: false },
-            { src: "🐧", matched: false }, { src: "🐦", matched: false }, { src: "🐤", matched: false }, { src: "🦆", matched: false },
-            { src: "🦅", matched: false }, { src: "🦉", matched: false }, { src: "🦇", matched: false }, { src: "🐺", matched: false },
+            { src: "🐄", matched: false }, { src: "🐓", matched: false }, { src: "🐖", matched: false }, { src: "🐑", matched: false },
+            { src: "🐴", matched: false }, { src: "🐇", matched: false }, { src: "🐕", matched: false }, { src: "🐈", matched: false },
+            { src: "🦆", matched: false }, { src: "🐐", matched: false }, { src: "🦃", matched: false }, { src: "🐝", matched: false },
+            { src: "🐛", matched: false }, { src: "🦋", matched: false }, { src: "🐞", matched: false }, { src: "🐌", matched: false },
+            { src: "🐸", matched: false }, { src: "🐢", matched: false }, { src: "🦔", matched: false }, { src: "🐿️", matched: false },
+            { src: "🦉", matched: false }, { src: "🐦", matched: false }, { src: "🐤", matched: false }, { src: "🐮", matched: false },
+        ]
+    },
+    garden: {
+        name: "Garden",
+        icon: "🌻",
+        cards: [
+            { src: "🌻", matched: false }, { src: "🌷", matched: false }, { src: "🌹", matched: false }, { src: "🌺", matched: false },
+            { src: "🌸", matched: false }, { src: "🌼", matched: false }, { src: "🌿", matched: false }, { src: "🍀", matched: false },
+            { src: "🌵", matched: false }, { src: "🌱", matched: false }, { src: "🍄", matched: false }, { src: "🌾", matched: false },
+            { src: "🌳", matched: false }, { src: "🪴", matched: false }, { src: "🍁", matched: false }, { src: "🍂", matched: false },
+            { src: "🍃", matched: false }, { src: "🪻", matched: false }, { src: "🫧", matched: false }, { src: "🪺", matched: false },
+            { src: "🌲", matched: false }, { src: "🌴", matched: false }, { src: "🏵️", matched: false }, { src: "💐", matched: false },
         ]
     },
     fruits: {
@@ -25,32 +36,20 @@ const THEMES = {
             { src: "🍓", matched: false }, { src: "🍉", matched: false }, { src: "🍋", matched: false }, { src: "🍑", matched: false },
             { src: "🍍", matched: false }, { src: "🥝", matched: false }, { src: "🥥", matched: false }, { src: "🍒", matched: false },
             { src: "🍈", matched: false }, { src: "🫐", matched: false }, { src: "🥭", matched: false }, { src: "🍏", matched: false },
-            { src: "🥑", matched: false }, { src: "🍐", matched: false }, { src: "🥔", matched: false }, { src: "🍅", matched: false },
-            { src: "🌶️", matched: false }, { src: "🫑", matched: false }, { src: "🥕", matched: false }, { src: "🌽", matched: false },
+            { src: "🥑", matched: false }, { src: "🍐", matched: false }, { src: "🌽", matched: false }, { src: "🍅", matched: false },
+            { src: "🫑", matched: false }, { src: "🥕", matched: false }, { src: "🥒", matched: false }, { src: "🌶️", matched: false },
         ]
     },
-    nature: {
-        name: "Nature",
-        icon: "🌸",
+    animals: {
+        name: "Animals",
+        icon: "🦊",
         cards: [
-            { src: "🌸", matched: false }, { src: "🌺", matched: false }, { src: "🌻", matched: false }, { src: "🌷", matched: false },
-            { src: "🌹", matched: false }, { src: "🌼", matched: false }, { src: "🌵", matched: false }, { src: "🌴", matched: false },
-            { src: "🌲", matched: false }, { src: "🌳", matched: false }, { src: "🌾", matched: false }, { src: "🌿", matched: false },
-            { src: "🍀", matched: false }, { src: "🍁", matched: false }, { src: "🍂", matched: false }, { src: "🍃", matched: false },
-            { src: "🌱", matched: false }, { src: "🪴", matched: false }, { src: "🌾", matched: false }, { src: "🌺", matched: false },
-            { src: "🏔️", matched: false }, { src: "⛰️", matched: false }, { src: "🗻", matched: false }, { src: "🏕️", matched: false },
-        ]
-    },
-    space: {
-        name: "Space",
-        icon: "🚀",
-        cards: [
-            { src: "🌎", matched: false }, { src: "🌙", matched: false }, { src: "⭐", matched: false }, { src: "☄️", matched: false },
-            { src: "🪐", matched: false }, { src: "🌟", matched: false }, { src: "💫", matched: false }, { src: "✨", matched: false },
-            { src: "🚀", matched: false }, { src: "🛸", matched: false }, { src: "🌌", matched: false }, { src: "🔭", matched: false },
-            { src: "🌕", matched: false }, { src: "🌖", matched: false }, { src: "🌗", matched: false }, { src: "🌘", matched: false },
-            { src: "🌑", matched: false }, { src: "🌒", matched: false }, { src: "🌓", matched: false }, { src: "🌔", matched: false },
-            { src: "🌍", matched: false }, { src: "🌏", matched: false }, { src: "☀️", matched: false }, { src: "🌠", matched: false },
+            { src: "🦊", matched: false }, { src: "🐻", matched: false }, { src: "🐼", matched: false }, { src: "🐨", matched: false },
+            { src: "🐯", matched: false }, { src: "🦁", matched: false }, { src: "🐵", matched: false }, { src: "🐘", matched: false },
+            { src: "🦒", matched: false }, { src: "🦓", matched: false }, { src: "🐊", matched: false }, { src: "🦩", matched: false },
+            { src: "🦜", matched: false }, { src: "🐧", matched: false }, { src: "🐬", matched: false }, { src: "🐙", matched: false },
+            { src: "🦀", matched: false }, { src: "🐠", matched: false }, { src: "🦈", matched: false }, { src: "🐋", matched: false },
+            { src: "🦅", matched: false }, { src: "🐺", matched: false }, { src: "🦇", matched: false }, { src: "🐿️", matched: false },
         ]
     }
 };
@@ -61,79 +60,107 @@ const DIFFICULTIES = {
     Hard: { pairs: 24, cols: 8 },
 };
 
+const PLAYER_COLORS = [
+    { bg: "bg-red-500", text: "text-red-700", light: "bg-red-100 dark:bg-red-900/20", border: "border-red-300", dot: "bg-red-400" },
+    { bg: "bg-sky-500", text: "text-sky-700", light: "bg-sky-100 dark:bg-sky-900/20", border: "border-sky-300", dot: "bg-sky-400" },
+    { bg: "bg-amber-500", text: "text-amber-700", light: "bg-amber-100 dark:bg-amber-900/20", border: "border-amber-300", dot: "bg-amber-400" },
+    { bg: "bg-emerald-500", text: "text-emerald-700", light: "bg-emerald-100 dark:bg-emerald-900/20", border: "border-emerald-300", dot: "bg-emerald-400" },
+];
+
+function Confetti() {
+    const particles = Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 2 + Math.random() * 2,
+        size: 6 + Math.random() * 8,
+        color: ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#f97316', '#eab308'][Math.floor(Math.random() * 6)],
+    }));
+
+    return (
+        <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
+            {particles.map((p) => (
+                <div
+                    key={p.id}
+                    className="absolute animate-confetti"
+                    style={{
+                        left: `${p.left}%`,
+                        top: '-10px',
+                        width: p.size,
+                        height: p.size,
+                        backgroundColor: p.color,
+                        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                        animationDelay: `${p.delay}s`,
+                        animationDuration: `${p.duration}s`,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
 export default function GameBoard() {
-    const [gameState, setGameState] = useState("setup"); // setup, playing, finished
+    const [gameState, setGameState] = useState("setup");
     const [cards, setCards] = useState([]);
     const [turns, setTurns] = useState(0);
     const [choiceOne, setChoiceOne] = useState(null);
     const [choiceTwo, setChoiceTwo] = useState(null);
     const [disabled, setDisabled] = useState(false);
 
-    // Timer state
-    const [startTime, setStartTime] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [timerInterval, setTimerInterval] = useState(null);
+    const timerRef = useRef(null);
+    const startTimeRef = useRef(null);
 
-    // Setup State
     const [difficulty, setDifficulty] = useState("Easy");
     const [playerNames, setPlayerNames] = useState(["Player 1", "Player 2"]);
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [scores, setScores] = useState([0, 0]);
-    const [theme, setTheme] = useState("animals");
+    const [theme, setTheme] = useState("farm");
 
-    // Start Game
-    const startGame = () => {
-        // Randomize player order
-        const shuffledPlayerIndices = playerNames.map((_, i) => i).sort(() => Math.random() - 0.5);
-        // For simplicity, just pick a random start, but keep array order for UI? 
-        // Actually user asked to "random user turns... and loop". 
-        // Let's just randomize who starts, then follow the list order.
-        setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
-        setScores(new Array(playerNames.length).fill(0));
+    const [bestScore, setBestScore] = useState(null);
 
-        shuffleCards();
-        setGameState("playing");
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('memo-best-scores');
+            if (saved) setBestScore(JSON.parse(saved));
+        } catch { /* ignore */ }
+    }, []);
 
-        // Start timer
-        const now = Date.now();
-        setStartTime(now);
-        setElapsedTime(0);
-
-        const interval = setInterval(() => {
-            setElapsedTime(Date.now() - now);
-        }, 100); // Update every 100ms for smooth display
-
-        setTimerInterval(interval);
-    };
-
-    // Restart Game (keep same settings)
-    const restartGame = () => {
-        // Clear old timer
-        if (timerInterval) {
-            clearInterval(timerInterval);
+    const saveBestScore = useCallback((time, moves, diff) => {
+        const key = `${diff}-${playerNames.length}p`;
+        const newBest = { ...bestScore };
+        const current = newBest[key];
+        if (!current || moves < current.moves || (moves === current.moves && time < current.time)) {
+            newBest[key] = { moves, time, date: Date.now() };
+            setBestScore(newBest);
+            try { localStorage.setItem('memo-best-scores', JSON.stringify(newBest)); } catch { /* ignore */ }
+            return true;
         }
+        return false;
+    }, [bestScore, playerNames.length]);
 
-        // Reset game state
-        setGameState("playing"); // Close modal and go back to playing
-        setScores(new Array(playerNames.length).fill(0));
-        setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
-
-        shuffleCards();
-
-        // Start new timer
+    const startTimer = useCallback(() => {
+        if (timerRef.current) clearInterval(timerRef.current);
         const now = Date.now();
-        setStartTime(now);
+        startTimeRef.current = now;
         setElapsedTime(0);
-
-        const interval = setInterval(() => {
+        timerRef.current = setInterval(() => {
             setElapsedTime(Date.now() - now);
         }, 100);
+    }, []);
 
-        setTimerInterval(interval);
-    };
+    const stopTimer = useCallback(() => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
 
-    // Shuffle Cards based on difficulty and theme
-    const shuffleCards = () => {
+    useEffect(() => {
+        return () => stopTimer();
+    }, [stopTimer]);
+
+    const shuffleCards = useCallback(() => {
         const numPairs = DIFFICULTIES[difficulty].pairs;
         const themeCards = THEMES[theme].cards;
         const selectedImages = themeCards.slice(0, numPairs);
@@ -146,76 +173,78 @@ export default function GameBoard() {
         setCards(shuffledCards);
         setTurns(0);
         setDisabled(false);
+    }, [difficulty, theme]);
+
+    const startGame = () => {
+        const trimmedNames = playerNames.map((n, i) => n.trim() || `Player ${i + 1}`);
+        setPlayerNames(trimmedNames);
+        setCurrentPlayerIndex(Math.floor(Math.random() * trimmedNames.length));
+        setScores(new Array(trimmedNames.length).fill(0));
+        shuffleCards();
+        setGameState("playing");
+        startTimer();
     };
 
-    // Handle a choice
+    const restartGame = () => {
+        stopTimer();
+        setScores(new Array(playerNames.length).fill(0));
+        setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
+        shuffleCards();
+        setGameState("playing");
+        startTimer();
+    };
+
+    const goToSetup = () => {
+        stopTimer();
+        setGameState("setup");
+    };
+
     const handleChoice = (card) => {
+        if (choiceOne && choiceOne.id === card.id) return;
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
     };
 
-    // Compare 2 selected cards
     useEffect(() => {
         if (choiceOne && choiceTwo) {
             setDisabled(true);
             if (choiceOne.src === choiceTwo.src) {
-                setCards((prevCards) => {
-                    return prevCards.map((card) => {
-                        if (card.src === choiceOne.src) {
-                            return { ...card, matched: true };
-                        } else {
-                            return card;
-                        }
-                    });
-                });
-
-                // Update score for current player
+                setCards((prevCards) =>
+                    prevCards.map((card) =>
+                        card.src === choiceOne.src ? { ...card, matched: true } : card
+                    )
+                );
                 setScores(prev => {
                     const newScores = [...prev];
                     newScores[currentPlayerIndex] += 1;
                     return newScores;
                 });
-
-                resetTurn(true); // Match found, keep turn
+                resetTurn(true);
             } else {
-                setTimeout(() => resetTurn(false), 1000); // No match, next turn
+                setTimeout(() => resetTurn(false), 1000);
             }
         }
     }, [choiceOne, choiceTwo]);
 
-    // Reset choices & handle turn switching
     const resetTurn = (matched) => {
         setChoiceOne(null);
         setChoiceTwo(null);
         setTurns((prevTurns) => prevTurns + 1);
         setDisabled(false);
-
         if (!matched) {
             setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
         }
     };
 
-    // Check for win
+    const [isNewBest, setIsNewBest] = useState(false);
     useEffect(() => {
         if (cards.length > 0 && cards.every((card) => card.matched)) {
+            stopTimer();
+            const newBest = saveBestScore(elapsedTime, turns, difficulty);
+            setIsNewBest(newBest);
             setGameState("finished");
-            // Stop timer when game ends
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                setTimerInterval(null);
-            }
         }
-    }, [cards, timerInterval]);
+    }, [cards]);
 
-    // Cleanup timer on unmount
-    useEffect(() => {
-        return () => {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
-        };
-    }, [timerInterval]);
-
-    // Setup Handlers
     const addPlayer = () => {
         if (playerNames.length < 4) {
             setPlayerNames([...playerNames, `Player ${playerNames.length + 1}`]);
@@ -234,35 +263,50 @@ export default function GameBoard() {
         setPlayerNames(newNames);
     };
 
+    const formatTime = (ms) => {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    // ─── SETUP SCREEN ───
     if (gameState === "setup") {
         return (
-            <div className="flex items-center justify-center w-full h-full p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-                <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-10 space-y-8 border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-center w-full min-h-screen p-4 bg-gradient-to-b from-sky-200 via-green-100 to-yellow-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
+                {/* Decorative elements */}
+                <div className="fixed top-6 left-8 text-4xl opacity-50 animate-wiggle hidden sm:block">🌻</div>
+                <div className="fixed top-20 right-12 text-3xl opacity-40 hidden sm:block">🐝</div>
+                <div className="fixed bottom-16 left-16 text-3xl opacity-40 hidden sm:block">🌿</div>
+                <div className="fixed bottom-10 right-20 text-4xl opacity-50 hidden sm:block">🐞</div>
+
+                <div className="w-full max-w-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl shadow-amber-900/10 p-8 sm:p-10 space-y-7 border-2 border-amber-200/60 dark:border-amber-800/30">
                     {/* Header */}
                     <div className="text-center space-y-2">
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Setup Your Game
+                        <div className="text-5xl mb-2">🌻</div>
+                        <h2 className="text-4xl font-extrabold text-amber-800 dark:text-amber-200">
+                            Memo Dami
                         </h2>
-                        <p className="text-gray-500 dark:text-gray-400">Choose difficulty and add players</p>
+                        <p className="text-amber-600/70 dark:text-amber-400/70 text-sm font-medium">Match the pairs and have fun!</p>
                     </div>
 
                     {/* Difficulty Selection */}
-                    <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                            Difficulty Level
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
+                            Difficulty
                         </label>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
                             {Object.entries(DIFFICULTIES).map(([diff, config]) => (
                                 <button
                                     key={diff}
                                     onClick={() => setDifficulty(diff)}
-                                    className={`relative py-4 px-4 rounded-2xl font-bold transition-all duration-200 ${difficulty === diff
-                                        ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg scale-105 ring-2 ring-blue-400 ring-offset-2"
-                                        : "bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-102"
+                                    className={`relative py-3 px-3 rounded-xl font-bold transition-all duration-200 ${difficulty === diff
+                                        ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25 scale-105 ring-2 ring-green-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                        : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
                                         }`}
                                 >
-                                    <div className="text-lg">{diff}</div>
-                                    <div className={`text-xs mt-1 ${difficulty === diff ? 'text-blue-100' : 'text-gray-400'}`}>
+                                    <div className="text-sm">{diff}</div>
+                                    <div className={`text-xs mt-0.5 ${difficulty === diff ? 'text-green-100' : 'text-amber-500 dark:text-amber-400'}`}>
                                         {config.pairs} pairs
                                     </div>
                                 </button>
@@ -271,22 +315,22 @@ export default function GameBoard() {
                     </div>
 
                     {/* Theme Selection */}
-                    <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                            Card Theme
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
+                            Theme
                         </label>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="grid grid-cols-4 gap-2">
                             {Object.entries(THEMES).map(([key, themeData]) => (
                                 <button
                                     key={key}
                                     onClick={() => setTheme(key)}
                                     className={`relative py-3 px-2 rounded-xl font-bold transition-all duration-200 ${theme === key
-                                        ? "bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg scale-105 ring-2 ring-purple-400 ring-offset-2"
-                                        : "bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-102"
+                                        ? "bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-400/25 scale-105 ring-2 ring-orange-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                        : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
                                         }`}
                                 >
-                                    <div className="text-2xl mb-1">{themeData.icon}</div>
-                                    <div className={`text-xs ${theme === key ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    <div className="text-2xl mb-0.5">{themeData.icon}</div>
+                                    <div className={`text-xs ${theme === key ? 'text-orange-100' : 'text-amber-500 dark:text-amber-400'}`}>
                                         {themeData.name}
                                     </div>
                                 </button>
@@ -295,43 +339,46 @@ export default function GameBoard() {
                     </div>
 
                     {/* Player Setup */}
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                         <div className="flex justify-between items-center">
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                            <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
                                 Players ({playerNames.length}/4)
                             </label>
                             <button
                                 onClick={addPlayer}
                                 disabled={playerNames.length >= 4}
-                                className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <span className="text-lg">+</span>
-                                Add Player
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add
                             </button>
                         </div>
 
-                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-56 overflow-y-auto">
                             {playerNames.map((name, index) => (
                                 <div
                                     key={index}
-                                    className="group flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all"
+                                    className="group flex items-center gap-2.5 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30 hover:border-green-300 dark:hover:border-green-500/30 transition-colors"
                                 >
-                                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-md">
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${PLAYER_COLORS[index]?.bg || 'bg-gray-400'} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
                                         {index + 1}
                                     </div>
                                     <input
                                         type="text"
                                         value={name}
                                         onChange={(e) => updatePlayerName(index, e.target.value)}
-                                        className="flex-1 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 dark:focus:border-blue-400 outline-none font-medium transition-colors"
+                                        className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 outline-none text-sm font-medium transition-colors text-amber-900 dark:text-amber-100"
                                         placeholder={`Player ${index + 1}`}
+                                        maxLength={20}
                                     />
                                     {playerNames.length > 1 && (
                                         <button
                                             onClick={() => removePlayer(index)}
-                                            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
                                         >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                             </svg>
                                         </button>
@@ -341,139 +388,146 @@ export default function GameBoard() {
                         </div>
                     </div>
 
+                    {/* Best Score Display */}
+                    {bestScore && bestScore[`${difficulty}-${playerNames.length}p`] && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-300/50 dark:border-yellow-800/30 rounded-xl">
+                            <span className="text-sm">⭐</span>
+                            <span className="text-amber-700 dark:text-amber-300 text-sm font-medium">
+                                Best: {bestScore[`${difficulty}-${playerNames.length}p`].moves} moves in {formatTime(bestScore[`${difficulty}-${playerNames.length}p`].time)}
+                            </span>
+                        </div>
+                    )}
+
                     {/* Start Game Button */}
                     <button
                         onClick={startGame}
-                        className="w-full py-4 bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-600/25 hover:shadow-2xl hover:shadow-green-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 border border-green-400/30"
                     >
-                        <span>Start Game</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        <span>Let&apos;s Play!</span>
+                        <span className="text-xl">🎮</span>
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Determine grid columns style
+    // Grid columns and rows for fitting to screen
+    const cols = DIFFICULTIES[difficulty].cols;
+    const totalCards = DIFFICULTIES[difficulty].pairs * 2;
+    const rows = Math.ceil(totalCards / cols);
     const gridColsClass = {
-        4: "grid-cols-4",
+        4: "grid-cols-3 sm:grid-cols-4",
         6: "grid-cols-4 sm:grid-cols-6",
-        8: "grid-cols-6 sm:grid-cols-8",
-    }[DIFFICULTIES[difficulty].cols];
+        8: "grid-cols-4 sm:grid-cols-6 md:grid-cols-8",
+    }[cols];
 
-    // Format time display
-    const formatTime = (ms) => {
-        const seconds = Math.floor(ms / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    };
+    const matchedCount = cards.filter(c => c.matched).length / 2;
+    const totalPairs = DIFFICULTIES[difficulty].pairs;
+    const progress = totalPairs > 0 ? (matchedCount / totalPairs) * 100 : 0;
 
+    // ─── PLAYING SCREEN ───
     return (
-        <div className="flex flex-col items-center w-full h-screen max-h-screen overflow-hidden">
-            {/* Compact Header */}
-            <header className="w-full bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm shrink-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-                    <div className="flex items-center justify-between gap-6">
-                        {/* Left: Title, Stats, and Controls */}
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <div className="flex flex-col items-center w-full h-screen max-h-screen overflow-hidden bg-gradient-to-b from-sky-100 via-green-50 to-yellow-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+            {/* Header */}
+            <header className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b-2 border-amber-200/50 dark:border-gray-700/50 shrink-0 z-10">
+                {/* Progress bar */}
+                <div className="h-1.5 bg-amber-100 dark:bg-gray-800">
+                    <div
+                        className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 transition-all duration-500 ease-out rounded-r-full"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                        {/* Left: Title + Stats */}
+                        <div className="flex items-center gap-3 min-w-0">
+                            <h1 className="text-lg sm:text-xl font-extrabold text-amber-800 dark:text-amber-200 whitespace-nowrap">
                                 Memo Dami
                             </h1>
 
-                            {/* Stats */}
-                            <div className="hidden sm:flex items-center gap-4">
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{formatTime(elapsedTime)}</span>
+                            <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                                    <span className="text-xs">⏱️</span>
+                                    <span className="text-xs font-bold text-amber-800 dark:text-amber-200 tabular-nums">{formatTime(elapsedTime)}</span>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
-                                    </svg>
-                                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">{turns} moves</span>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-200/50 dark:border-green-800/30">
+                                    <span className="text-xs font-bold text-green-700 dark:text-green-300 tabular-nums">{matchedCount}/{totalPairs}</span>
+                                </div>
+                                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 dark:bg-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-800/30">
+                                    <span className="text-xs font-bold text-orange-700 dark:text-orange-300 tabular-nums">{turns} moves</span>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Restart Button */}
+                        {/* Right: Controls */}
+                        <div className="flex items-center gap-1">
                             <button
                                 onClick={restartGame}
-                                className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-green-700 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                                title="Restart game"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
-                                Restart
+                                <span className="hidden sm:inline">Restart</span>
                             </button>
-
                             <button
-                                onClick={() => setGameState("setup")}
-                                className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                                onClick={goToSetup}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-orange-700 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-all"
+                                title="Back to setup"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                Settings
+                                <span className="hidden sm:inline">Settings</span>
                             </button>
                         </div>
+                    </div>
 
-                        {/* Center: Player Scores */}
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar">
-                            {playerNames.map((name, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 border-2 ${index === currentPlayerIndex
-                                        ? "bg-gradient-to-br from-blue-500 to-purple-600 border-blue-400 shadow-lg scale-110 animate-pulse"
-                                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60 scale-95"
-                                        }`}
-                                >
-                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${index === currentPlayerIndex
-                                        ? "bg-white/20 text-white ring-2 ring-white/30"
-                                        : "bg-gradient-to-br from-blue-400 to-purple-500 text-white"
-                                        }`}>
-                                        {index + 1}
-                                    </div>
-                                    <div className="flex flex-col items-start min-w-[60px]">
-                                        <span className={`text-xs font-medium truncate max-w-[100px] ${index === currentPlayerIndex ? "text-white font-bold" : "text-gray-600 dark:text-gray-400"
+                    {/* Player Scoreboard */}
+                    {playerNames.length > 1 && (
+                        <div className="flex gap-2 mt-2.5 overflow-x-auto no-scrollbar pb-0.5">
+                            {playerNames.map((name, index) => {
+                                const color = PLAYER_COLORS[index];
+                                const isActive = index === currentPlayerIndex;
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border-2 shrink-0 ${isActive
+                                            ? `${color.bg} border-white/30 shadow-lg scale-105 text-white`
+                                            : `bg-white dark:bg-gray-800 ${color.border} dark:border-gray-700 opacity-50`
+                                            }`}
+                                    >
+                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isActive
+                                            ? "bg-white/25 text-white"
+                                            : `${color.bg} text-white`
                                             }`}>
-                                            {name}
-                                        </span>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className={`text-xl font-black leading-none ${index === currentPlayerIndex ? "text-white" : "text-gray-900 dark:text-white"
-                                                }`}>
+                                            {index + 1}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs font-medium truncate max-w-[80px] ${isActive ? "text-white" : `${color.text} dark:text-gray-300`}`}>
+                                                {name}
+                                            </span>
+                                            <span className={`text-sm font-black ${isActive ? "text-white" : "text-gray-800 dark:text-white"}`}>
                                                 {scores[index]}
                                             </span>
-                                            {index === currentPlayerIndex && (
-                                                <span className="text-xs text-white/80 font-medium">← Your turn!</span>
-                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
-
-                        {/* Right: Mobile Settings */}
-                        <button
-                            onClick={() => setGameState("setup")}
-                            className="sm:hidden flex items-center justify-center w-9 h-9 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </button>
-                    </div>
+                    )}
                 </div>
-            </header >
+            </header>
 
-            {/* Game Grid Container - Scrollable if needed, but trying to fit */}
-            < div className="flex-1 w-full flex items-center justify-center p-4 overflow-y-auto" >
-                <div className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full max-w-4xl aspect-square sm:aspect-auto`}>
+            {/* Game Grid */}
+            <div className="flex-1 w-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+                <div
+                    className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-5xl`}
+                    style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
+                >
                     {cards.map((card) => (
                         <Card
                             key={card.id}
@@ -484,68 +538,78 @@ export default function GameBoard() {
                         />
                     ))}
                 </div>
-            </div >
+            </div>
 
             {/* Win Screen Modal */}
-            {
-                gameState === "finished" && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-                        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-md w-full animate-in zoom-in duration-300">
-                            <div className="text-6xl mb-4">🎉</div>
-                            <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                Game Complete!
+            {gameState === "finished" && (
+                <>
+                    <Confetti />
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4 animate-fadeIn">
+                        <div className="bg-gradient-to-b from-white to-amber-50 dark:from-gray-800 dark:to-gray-800 p-8 rounded-3xl shadow-2xl text-center max-w-md w-full animate-scaleIn border-2 border-amber-200 dark:border-amber-800/30">
+                            <div className="text-6xl mb-3">
+                                {playerNames.length > 1 ? '🏆' : '🎉'}
+                            </div>
+                            <h2 className="text-3xl font-extrabold mb-1 text-amber-800 dark:text-amber-200">
+                                {playerNames.length > 1 ? 'Game Over!' : 'Well Done!'}
                             </h2>
 
-                            {/* Game Stats */}
-                            <div className="flex justify-center gap-4 mb-6">
-                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{formatTime(elapsedTime)}</span>
+                            {isNewBest && (
+                                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-bold mt-1 mb-3 animate-bounce border border-yellow-300 dark:border-yellow-700">
+                                    ⭐ New Best Score!
                                 </div>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                    <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
-                                    </svg>
-                                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{turns} moves</span>
+                            )}
+
+                            {/* Game Stats */}
+                            <div className="flex justify-center gap-3 my-5">
+                                <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-100 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
+                                    <span className="text-sm">⏱️</span>
+                                    <span className="text-sm font-bold text-amber-800 dark:text-amber-200">{formatTime(elapsedTime)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2.5 bg-green-100 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/30">
+                                    <span className="text-sm font-bold text-green-700 dark:text-green-300">{turns} moves</span>
                                 </div>
                             </div>
 
-                            <div className="space-y-4 mb-8">
+                            {/* Player Rankings */}
+                            <div className="space-y-2 mb-6">
                                 {playerNames
-                                    .map((name, i) => ({ name, score: scores[i] }))
+                                    .map((name, i) => ({ name, score: scores[i], originalIndex: i }))
                                     .sort((a, b) => b.score - a.score)
                                     .map((player, i) => (
-                                        <div key={i} className={`flex justify-between items-center p-3 rounded-lg ${i === 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 ring-2 ring-yellow-400' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                                            <div className="flex items-center gap-3">
-                                                {i === 0 && <span className="text-2xl">👑</span>}
-                                                <span className={`font-bold ${i === 0 ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-400'}`}>#{i + 1}</span>
-                                                <span className={`font-semibold ${i === 0 ? 'text-yellow-900 dark:text-yellow-100' : ''}`}>{player.name}</span>
+                                        <div key={i} className={`flex justify-between items-center p-3 rounded-xl transition-all ${i === 0
+                                            ? 'bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/20 dark:to-amber-900/10 ring-2 ring-yellow-400/50 dark:ring-yellow-600/50'
+                                            : 'bg-amber-50/50 dark:bg-gray-700/30 border border-amber-100 dark:border-gray-700'}`}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                {i === 0 && <span className="text-xl">👑</span>}
+                                                <div className={`w-5 h-5 rounded-full ${PLAYER_COLORS[player.originalIndex]?.bg || 'bg-gray-400'} flex items-center justify-center`}>
+                                                    <span className="text-[10px] font-bold text-white">{player.originalIndex + 1}</span>
+                                                </div>
+                                                <span className={`text-sm font-semibold ${i === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-amber-700 dark:text-gray-300'}`}>{player.name}</span>
                                             </div>
-                                            <span className={`font-bold text-xl ${i === 0 ? 'text-yellow-700 dark:text-yellow-300' : ''}`}>{player.score} pairs</span>
+                                            <span className={`text-sm font-bold ${i === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-amber-500 dark:text-gray-400'}`}>{player.score} pairs</span>
                                         </div>
                                     ))}
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
                                 <button
-                                    onClick={() => setGameState("setup")}
-                                    className="flex-1 py-3 px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                    onClick={goToSetup}
+                                    className="flex-1 py-3 px-6 bg-amber-100 dark:bg-gray-700 text-amber-800 dark:text-amber-200 rounded-xl font-bold text-sm hover:bg-amber-200 dark:hover:bg-gray-600 transition-colors border border-amber-200 dark:border-gray-600"
                                 >
                                     New Setup
                                 </button>
                                 <button
                                     onClick={restartGame}
-                                    className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+                                    className="flex-1 py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:scale-[1.03] active:scale-[0.97] transition-all shadow-lg shadow-green-600/25 border border-green-400/30"
                                 >
-                                    Play Again
+                                    Play Again 🎮
                                 </button>
                             </div>
                         </div>
                     </div>
-                )
-            }
-        </div >
+                </>
+            )}
+        </div>
     );
 }

@@ -1,21 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #f0f9ff;
-  --foreground: #171717;
+  --background: #fefce8;
+  --foreground: #422006;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f172a;
-    --foreground: #ededed;
+    --background: #1a1207;
+    --foreground: #fef3c7;
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Fredoka', Arial, Helvetica, sans-serif;
 }
 
 @tailwind base;
@@ -39,47 +40,99 @@ body {
     perspective: 1000px;
   }
 
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Card back with green gradient + dot pattern */
+  .card-back {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18) 2px, transparent 2px),
+      radial-gradient(circle at 80% 30%, rgba(255,255,255,0.18) 2px, transparent 2px),
+      radial-gradient(circle at 40% 70%, rgba(255,255,255,0.15) 2px, transparent 2px),
+      radial-gradient(circle at 70% 80%, rgba(255,255,255,0.15) 2px, transparent 2px),
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.12) 3px, transparent 3px),
+      radial-gradient(circle at 10% 50%, rgba(255,255,255,0.12) 2px, transparent 2px),
+      radial-gradient(circle at 90% 60%, rgba(255,255,255,0.12) 2px, transparent 2px),
+      linear-gradient(135deg, #22c55e 0%, #10b981 40%, #0d9488 100%);
+  }
+
   /* Match celebration animation */
   @keyframes matchCelebration {
-
-    0%,
-    100% {
-      transform: scale(1);
+    0%, 100% {
+      transform: rotateY(180deg) scale(1);
     }
-
-    25% {
-      transform: scale(1.1) rotate(5deg);
+    30% {
+      transform: rotateY(180deg) scale(1.08);
     }
-
-    50% {
-      transform: scale(1.15) rotate(-5deg);
+    60% {
+      transform: rotateY(180deg) scale(0.95);
     }
-
-    75% {
-      transform: scale(1.1) rotate(3deg);
+    80% {
+      transform: rotateY(180deg) scale(1.03);
     }
   }
 
-  .matched-card {
-    animation: matchCelebration 0.5s ease-out;
+  .matched-card > div {
+    animation: matchCelebration 0.5s ease-out forwards;
   }
 
-  /* Pulse animation for active player */
-  @keyframes pulse {
-
-    0%,
-    100% {
+  /* Confetti falling animation */
+  @keyframes confettiFall {
+    0% {
+      transform: translateY(0) rotate(0deg);
       opacity: 1;
-      transform: scale(1.1);
     }
-
-    50% {
-      opacity: 0.9;
-      transform: scale(1.12);
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
     }
   }
 
-  .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .animate-confetti {
+    animation: confettiFall 3s ease-in forwards;
+  }
+
+  /* Modal animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-wiggle {
+    animation: wiggle 0.5s ease-in-out;
   }
 }
