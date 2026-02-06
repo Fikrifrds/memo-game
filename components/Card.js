@@ -1,7 +1,11 @@
 "use client";
 
-export default function Card({ card, cardNumber, handleChoice, flipped, disabled }) {
+export default function Card({ card, cardNumber, handleChoice, flipped, disabled, onClueClick }) {
     const handleClick = () => {
+        if (flipped && card.type === "clue" && onClueClick) {
+            onClueClick(card);
+            return;
+        }
         if (!disabled && !flipped) {
             handleChoice(card);
         }
@@ -22,8 +26,9 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
         }
         if (cardType === "clue") {
             return (
-                <div className="flex flex-col items-center justify-center px-1.5 py-0.5 w-full h-full overflow-hidden">
-                    <span className="text-[7px] sm:text-[9px] md:text-[11px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center">{card.src}</span>
+                <div className="flex flex-col items-center justify-center px-1.5 py-0.5 w-full h-full overflow-hidden gap-0.5">
+                    <span className="text-[7px] sm:text-[9px] md:text-[11px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center line-clamp-3 sm:line-clamp-4">{card.src}</span>
+                    <span className="text-[8px] sm:text-[10px] text-orange-500 dark:text-orange-400 opacity-70 select-none">tap to read</span>
                 </div>
             );
         }

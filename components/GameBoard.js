@@ -233,6 +233,7 @@ export default function GameBoard() {
     };
 
     const [matchFeedback, setMatchFeedback] = useState(null);
+    const [clueDrawer, setClueDrawer] = useState(null);
 
     useEffect(() => {
         if (choiceOne && choiceTwo) {
@@ -623,6 +624,7 @@ export default function GameBoard() {
                             handleChoice={handleChoice}
                             flipped={card === choiceOne || card === choiceTwo || card.matched}
                             disabled={disabled}
+                            onClueClick={(c) => setClueDrawer(c.src)}
                         />
                         );
                     })}
@@ -638,6 +640,34 @@ export default function GameBoard() {
                             {matchFeedback.cardA.src} = {matchFeedback.cardB.src}
                         </div>
                         <span className="text-lg">🔊</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Clue Drawer */}
+            {clueDrawer && (
+                <div
+                    className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+                    onClick={() => setClueDrawer(null)}
+                >
+                    <div
+                        className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl border-t-2 border-orange-300 dark:border-orange-700 animate-drawerUp"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-center pt-3 pb-1">
+                            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                        </div>
+                        <div className="px-6 pb-8 pt-2">
+                            <p className="text-base sm:text-lg md:text-xl leading-relaxed text-orange-800 dark:text-orange-200 font-medium italic text-center">
+                                {clueDrawer}
+                            </p>
+                            <button
+                                onClick={() => setClueDrawer(null)}
+                                className="mt-5 w-full py-3 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-xl font-bold text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
