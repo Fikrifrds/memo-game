@@ -1,10 +1,11 @@
 {
-  "name": "memo-game",
+  "name": "flipmatch",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "npx wrangler pages deploy out --project-name=flipmatch",
     "start": "next start",
     "lint": "eslint"
   },

@@ -111,6 +111,20 @@ function Confetti() {
     );
 }
 
+const SAVE_KEY = 'memo-game-state';
+
+function loadSavedGame() {
+    try {
+        const saved = localStorage.getItem(SAVE_KEY);
+        if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return null;
+}
+
+function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+}
+
 export default function GameBoard() {
     const [gameState, setGameState] = useState("setup");
     const [cards, setCards] = useState([]);
@@ -128,14 +142,60 @@ export default function GameBoard() {
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [scores, setScores] = useState([0, 0]);
     const [theme, setTheme] = useState("farm");
+    const [turnTimerEnabled, setTurnTimerEnabled] = useState(false);
+    const [turnTimerSeconds, setTurnTimerSeconds] = useState(30);
+    const [turnTimeLeft, setTurnTimeLeft] = useState(null);
+    const turnTimerRef = useRef(null);
 
     const [bestScore, setBestScore] = useState(null);
 
+    // On mount: load best scores + restore saved game if exists
     useEffect(() => {
         try {
             const saved = localStorage.getItem('memo-best-scores');
             if (saved) setBestScore(JSON.parse(saved));
         } catch { /* ignore */ }
+
+        const sg = loadSavedGame();
+        if (sg?.gameState === "playing") {
+            // Restore all game state
+            setGameState("playing");
+            setCards(sg.cards);
+            setTurns(sg.turns);
+            setDifficulty(sg.difficulty);
+            setTheme(sg.theme);
+            setPlayerNames(sg.playerNames);
+            setCurrentPlayerIndex(sg.currentPlayerIndex);
+            setScores(sg.scores);
+            setElapsedTime(sg.elapsedTime || 0);
+            setTurnTimerEnabled(sg.turnTimerEnabled || false);
+            setTurnTimerSeconds(sg.turnTimerSeconds || 30);
+
+            // Resume elapsed timer from saved offset
+            const resumeOffset = sg.elapsedTime || 0;
+            const now = Date.now();
+            startTimeRef.current = now - resumeOffset;
+            timerRef.current = setInterval(() => {
+                setElapsedTime(Date.now() - (now - resumeOffset));
+            }, 100);
+
+            // Resume turn timer
+            if (sg.turnTimerEnabled) {
+                setTurnTimeLeft(sg.turnTimerSeconds);
+                const startedAt = Date.now();
+                turnTimerRef.current = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+                    const remaining = sg.turnTimerSeconds - elapsed;
+                    if (remaining <= 0) {
+                        clearInterval(turnTimerRef.current);
+                        turnTimerRef.current = null;
+                        setTurnTimeLeft(0);
+                    } else {
+                        setTurnTimeLeft(remaining);
+                    }
+                }, 250);
+            }
+        }
     }, []);
 
     const saveBestScore = useCallback((time, moves, diff) => {
@@ -172,6 +232,47 @@ export default function GameBoard() {
         return () => stopTimer();
     }, [stopTimer]);
 
+    const startTurnTimer = useCallback(() => {
+        if (!turnTimerEnabled) return;
+        if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+        setTurnTimeLeft(turnTimerSeconds);
+        const startedAt = Date.now();
+        turnTimerRef.current = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            const remaining = turnTimerSeconds - elapsed;
+            if (remaining <= 0) {
+                clearInterval(turnTimerRef.current);
+                turnTimerRef.current = null;
+                setTurnTimeLeft(0);
+            } else {
+                setTurnTimeLeft(remaining);
+            }
+        }, 250);
+    }, [turnTimerEnabled, turnTimerSeconds]);
+
+    const stopTurnTimer = useCallback(() => {
+        if (turnTimerRef.current) {
+            clearInterval(turnTimerRef.current);
+            turnTimerRef.current = null;
+        }
+        setTurnTimeLeft(null);
+    }, []);
+
+    // Auto-skip turn when turn timer reaches 0
+    useEffect(() => {
+        if (turnTimeLeft === 0 && gameState === "playing" && !disabled) {
+            // Close clue drawer if open
+            setClueDrawer(null);
+            // If one card is flipped, flip it back
+            if (choiceOne && !choiceTwo) {
+                setChoiceOne(null);
+            }
+            setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
+            setTurns((prev) => prev + 1);
+            startTurnTimer();
+        }
+    }, [turnTimeLeft]);
+
     const isLearningTheme = ALL_THEMES[theme]?.mode === "learning";
 
     const shuffleCards = useCallback(() => {
@@ -203,6 +304,18 @@ export default function GameBoard() {
         setDisabled(false);
     }, [difficulty, theme]);
 
+    // Auto-save game state to localStorage when playing
+    useEffect(() => {
+        if (gameState !== "playing") return;
+        try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify({
+                gameState, cards, turns, difficulty, theme,
+                playerNames, currentPlayerIndex, scores,
+                elapsedTime, turnTimerEnabled, turnTimerSeconds,
+            }));
+        } catch { /* ignore */ }
+    }, [gameState, cards, turns, currentPlayerIndex, scores, elapsedTime]);
+
     const startGame = () => {
         const trimmedNames = playerNames.map((n, i) => n.trim() || `Player ${i + 1}`);
         setPlayerNames(trimmedNames);
@@ -211,10 +324,12 @@ export default function GameBoard() {
         shuffleCards();
         setGameState("playing");
         startTimer();
+        startTurnTimer();
     };
 
     const restartGame = () => {
         stopTimer();
+        stopTurnTimer();
         setScores(new Array(playerNames.length).fill(0));
         setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
         shuffleCards();
@@ -224,6 +339,8 @@ export default function GameBoard() {
 
     const goToSetup = () => {
         stopTimer();
+        stopTurnTimer();
+        clearSavedGame();
         setGameState("setup");
     };
 
@@ -298,12 +415,15 @@ export default function GameBoard() {
         if (!matched) {
             setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
         }
+        startTurnTimer();
     };
 
     const [isNewBest, setIsNewBest] = useState(false);
     useEffect(() => {
         if (cards.length > 0 && cards.every((card) => card.matched)) {
             stopTimer();
+            stopTurnTimer();
+            clearSavedGame();
             const newBest = saveBestScore(elapsedTime, turns, difficulty);
             setIsNewBest(newBest);
             setGameState("finished");
@@ -350,7 +470,7 @@ export default function GameBoard() {
                     <div className="text-center space-y-2">
                         <div className="text-5xl mb-2">🌻</div>
                         <h2 className="text-4xl font-extrabold text-amber-800 dark:text-amber-200">
-                            Memo Dami
+                            FlipMatch
                         </h2>
                         <p className="text-amber-600/70 dark:text-amber-400/70 text-sm font-medium">Match the pairs and have fun!</p>
                     </div>
@@ -376,6 +496,44 @@ export default function GameBoard() {
                                     </div>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Turn Timer Setting */}
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
+                            Turn Timer
+                        </label>
+                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30">
+                            <button
+                                onClick={() => setTurnTimerEnabled(!turnTimerEnabled)}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${turnTimerEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                            >
+                                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${turnTimerEnabled ? 'translate-x-5' : ''}`} />
+                            </button>
+                            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                {turnTimerEnabled ? 'On' : 'Off'}
+                            </span>
+                            {turnTimerEnabled && (
+                                <div className="flex items-center gap-2 ml-auto">
+                                    <button
+                                        onClick={() => setTurnTimerSeconds(Math.max(5, turnTimerSeconds - 5))}
+                                        className="w-8 h-8 rounded-lg bg-amber-200 dark:bg-gray-600 text-amber-800 dark:text-amber-200 font-bold text-lg flex items-center justify-center hover:bg-amber-300 dark:hover:bg-gray-500 transition-colors"
+                                    >
+                                        -
+                                    </button>
+                                    <div className="flex items-center gap-1 min-w-[60px] justify-center">
+                                        <span className="text-lg font-bold text-amber-800 dark:text-amber-200 tabular-nums">{turnTimerSeconds}</span>
+                                        <span className="text-xs text-amber-600 dark:text-amber-400">sec</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setTurnTimerSeconds(Math.min(120, turnTimerSeconds + 5))}
+                                        className="w-8 h-8 rounded-lg bg-amber-200 dark:bg-gray-600 text-amber-800 dark:text-amber-200 font-bold text-lg flex items-center justify-center hover:bg-amber-300 dark:hover:bg-gray-500 transition-colors"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -529,7 +687,7 @@ export default function GameBoard() {
                         {/* Left: Title + Stats */}
                         <div className="flex items-center gap-3 min-w-0">
                             <h1 className="text-lg sm:text-xl font-extrabold text-amber-800 dark:text-amber-200 whitespace-nowrap">
-                                Memo Dami
+                                FlipMatch
                             </h1>
 
                             <div className="flex items-center gap-1.5">
@@ -543,6 +701,22 @@ export default function GameBoard() {
                                 <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 dark:bg-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-800/30">
                                     <span className="text-xs font-bold text-orange-700 dark:text-orange-300 tabular-nums">{turns} moves</span>
                                 </div>
+                                {turnTimerEnabled && turnTimeLeft !== null && (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors ${turnTimeLeft <= 5
+                                        ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-800/50 animate-pulse'
+                                        : turnTimeLeft <= 10
+                                            ? 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800/30'
+                                            : 'bg-blue-100 dark:bg-blue-900/20 border-blue-200/50 dark:border-blue-800/30'
+                                    }`}>
+                                        <span className="text-xs">⏳</span>
+                                        <span className={`text-xs font-bold tabular-nums ${turnTimeLeft <= 5
+                                            ? 'text-red-700 dark:text-red-300'
+                                            : turnTimeLeft <= 10
+                                                ? 'text-yellow-700 dark:text-yellow-300'
+                                                : 'text-blue-700 dark:text-blue-300'
+                                        }`}>{turnTimeLeft}s</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -640,6 +814,26 @@ export default function GameBoard() {
                             {matchFeedback.cardA.src} = {matchFeedback.cardB.src}
                         </div>
                         <span className="text-lg">🔊</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Floating Turn Timer (visible above drawer) */}
+            {clueDrawer && turnTimerEnabled && turnTimeLeft !== null && (
+                <div className="fixed top-4 right-4 z-[60] animate-fadeIn">
+                    <div className={`flex items-center gap-2 px-5 py-3 rounded-2xl border-2 shadow-2xl transition-colors ${turnTimeLeft <= 5
+                        ? 'bg-red-100 dark:bg-red-900/90 border-red-400 dark:border-red-600 animate-pulse'
+                        : turnTimeLeft <= 10
+                            ? 'bg-yellow-100 dark:bg-yellow-900/90 border-yellow-400 dark:border-yellow-600'
+                            : 'bg-blue-100 dark:bg-blue-900/90 border-blue-300 dark:border-blue-600'
+                    }`}>
+                        <span className="text-2xl">⏳</span>
+                        <span className={`text-2xl font-extrabold tabular-nums ${turnTimeLeft <= 5
+                            ? 'text-red-700 dark:text-red-300'
+                            : turnTimeLeft <= 10
+                                ? 'text-yellow-700 dark:text-yellow-300'
+                                : 'text-blue-700 dark:text-blue-300'
+                        }`}>{turnTimeLeft}s</span>
                     </div>
                 </div>
             )}

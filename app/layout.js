@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Memo Dami",
+  title: "FlipMatch",
   description: "A fun memory matching game for everyone",
 };
 
