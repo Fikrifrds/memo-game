@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "./Card";
 import { LEARNING_THEMES } from "@/data/learningThemes";
 import { speak } from "@/utils/speech";
+import { playFlipSound, playCorrectSound, playWrongSound, setSoundEnabled } from "@/utils/sounds";
 
 const THEMES = {
     farm: {
@@ -144,13 +145,23 @@ export default function GameBoard() {
     const [theme, setTheme] = useState("farm");
     const [turnTimerEnabled, setTurnTimerEnabled] = useState(false);
     const [turnTimerSeconds, setTurnTimerSeconds] = useState(30);
+    const [soundEnabled, setSoundEnabledState] = useState(true);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
 
     const [bestScore, setBestScore] = useState(null);
 
-    // On mount: load best scores + restore saved game if exists
+    // On mount: load best scores + sound setting + restore saved game if exists
     useEffect(() => {
+        try {
+            const savedSound = localStorage.getItem('flipmatch-sound-enabled');
+            if (savedSound !== null) {
+                const val = savedSound === 'true';
+                setSoundEnabledState(val);
+                setSoundEnabled(val);
+            }
+        } catch { /* ignore */ }
+
         try {
             const saved = localStorage.getItem('memo-best-scores');
             if (saved) setBestScore(JSON.parse(saved));
@@ -346,6 +357,7 @@ export default function GameBoard() {
 
     const handleChoice = (card) => {
         if (choiceOne && choiceOne.id === card.id) return;
+        playFlipSound();
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
     };
 
@@ -361,6 +373,7 @@ export default function GameBoard() {
                 : choiceOne.src === choiceTwo.src;
 
             if (isMatch) {
+                playCorrectSound();
                 const matchKey = choiceOne.pairId || choiceOne.src;
                 setCards((prevCards) =>
                     prevCards.map((card) => {
@@ -402,6 +415,7 @@ export default function GameBoard() {
 
                 resetTurn(true);
             } else {
+                playWrongSound();
                 setTimeout(() => resetTurn(false), 1000);
             }
         }
@@ -534,6 +548,31 @@ export default function GameBoard() {
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Sound Setting */}
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
+                            Sound Effects
+                        </label>
+                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30">
+                            <button
+                                onClick={() => {
+                                    const newVal = !soundEnabled;
+                                    setSoundEnabledState(newVal);
+                                    setSoundEnabled(newVal);
+                                    try { localStorage.setItem('flipmatch-sound-enabled', String(newVal)); } catch { /* ignore */ }
+                                    if (newVal) playFlipSound();
+                                }}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${soundEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                            >
+                                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${soundEnabled ? 'translate-x-5' : ''}`} />
+                            </button>
+                            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                {soundEnabled ? 'On' : 'Off'}
+                            </span>
+                            <span className="ml-auto text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
                         </div>
                     </div>
 
