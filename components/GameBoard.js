@@ -61,11 +61,19 @@ const DIFFICULTIES = {
 };
 
 const PLAYER_COLORS = [
-    { bg: "bg-red-500", text: "text-red-700", light: "bg-red-100 dark:bg-red-900/20", border: "border-red-300", dot: "bg-red-400" },
-    { bg: "bg-sky-500", text: "text-sky-700", light: "bg-sky-100 dark:bg-sky-900/20", border: "border-sky-300", dot: "bg-sky-400" },
-    { bg: "bg-amber-500", text: "text-amber-700", light: "bg-amber-100 dark:bg-amber-900/20", border: "border-amber-300", dot: "bg-amber-400" },
-    { bg: "bg-emerald-500", text: "text-emerald-700", light: "bg-emerald-100 dark:bg-emerald-900/20", border: "border-emerald-300", dot: "bg-emerald-400" },
+    { bg: "bg-red-500", text: "text-red-700", border: "border-red-300" },
+    { bg: "bg-sky-500", text: "text-sky-700", border: "border-sky-300" },
+    { bg: "bg-amber-500", text: "text-amber-700", border: "border-amber-300" },
+    { bg: "bg-emerald-500", text: "text-emerald-700", border: "border-emerald-300" },
+    { bg: "bg-violet-500", text: "text-violet-700", border: "border-violet-300" },
+    { bg: "bg-pink-500", text: "text-pink-700", border: "border-pink-300" },
+    { bg: "bg-teal-500", text: "text-teal-700", border: "border-teal-300" },
+    { bg: "bg-orange-500", text: "text-orange-700", border: "border-orange-300" },
+    { bg: "bg-indigo-500", text: "text-indigo-700", border: "border-indigo-300" },
+    { bg: "bg-lime-500", text: "text-lime-700", border: "border-lime-300" },
 ];
+
+const MAX_PLAYERS = 10;
 
 function Confetti() {
     const particles = Array.from({ length: 50 }, (_, i) => ({
@@ -246,7 +254,7 @@ export default function GameBoard() {
     }, [cards]);
 
     const addPlayer = () => {
-        if (playerNames.length < 4) {
+        if (playerNames.length < MAX_PLAYERS) {
             setPlayerNames([...playerNames, `Player ${playerNames.length + 1}`]);
         }
     };
@@ -342,11 +350,11 @@ export default function GameBoard() {
                     <div className="space-y-2.5">
                         <div className="flex justify-between items-center">
                             <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                                Players ({playerNames.length}/4)
+                                Players ({playerNames.length}/{MAX_PLAYERS})
                             </label>
                             <button
                                 onClick={addPlayer}
-                                disabled={playerNames.length >= 4}
+                                disabled={playerNames.length >= MAX_PLAYERS}
                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +370,7 @@ export default function GameBoard() {
                                     key={index}
                                     className="group flex items-center gap-2.5 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30 hover:border-green-300 dark:hover:border-green-500/30 transition-colors"
                                 >
-                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${PLAYER_COLORS[index]?.bg || 'bg-gray-400'} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${PLAYER_COLORS[index % PLAYER_COLORS.length].bg} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
                                         {index + 1}
                                     </div>
                                     <input
@@ -488,32 +496,30 @@ export default function GameBoard() {
 
                     {/* Player Scoreboard */}
                     {playerNames.length > 1 && (
-                        <div className="flex gap-2 mt-2.5 overflow-x-auto no-scrollbar pb-0.5">
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
                             {playerNames.map((name, index) => {
-                                const color = PLAYER_COLORS[index];
+                                const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
                                 const isActive = index === currentPlayerIndex;
                                 return (
                                     <div
                                         key={index}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border-2 shrink-0 ${isActive
-                                            ? `${color.bg} border-white/30 shadow-lg scale-105 text-white`
-                                            : `bg-white dark:bg-gray-800 ${color.border} dark:border-gray-700 opacity-50`
+                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-300 border ${isActive
+                                            ? `${color.bg} border-white/30 shadow-md text-white`
+                                            : `bg-white/80 dark:bg-gray-800 ${color.border} dark:border-gray-700 opacity-50`
                                             }`}
                                     >
-                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isActive
+                                        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isActive
                                             ? "bg-white/25 text-white"
                                             : `${color.bg} text-white`
                                             }`}>
                                             {index + 1}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-xs font-medium truncate max-w-[80px] ${isActive ? "text-white" : `${color.text} dark:text-gray-300`}`}>
-                                                {name}
-                                            </span>
-                                            <span className={`text-sm font-black ${isActive ? "text-white" : "text-gray-800 dark:text-white"}`}>
-                                                {scores[index]}
-                                            </span>
-                                        </div>
+                                        <span className={`text-xs font-medium truncate max-w-[60px] ${isActive ? "text-white" : `${color.text} dark:text-gray-300`}`}>
+                                            {name}
+                                        </span>
+                                        <span className={`text-xs font-black ${isActive ? "text-white" : "text-gray-800 dark:text-white"}`}>
+                                            {scores[index]}
+                                        </span>
                                     </div>
                                 );
                             })}
@@ -571,7 +577,7 @@ export default function GameBoard() {
                             </div>
 
                             {/* Player Rankings */}
-                            <div className="space-y-2 mb-6">
+                            <div className="space-y-1.5 mb-6 max-h-60 overflow-y-auto">
                                 {playerNames
                                     .map((name, i) => ({ name, score: scores[i], originalIndex: i }))
                                     .sort((a, b) => b.score - a.score)
@@ -582,7 +588,7 @@ export default function GameBoard() {
                                         >
                                             <div className="flex items-center gap-2.5">
                                                 {i === 0 && <span className="text-xl">👑</span>}
-                                                <div className={`w-5 h-5 rounded-full ${PLAYER_COLORS[player.originalIndex]?.bg || 'bg-gray-400'} flex items-center justify-center`}>
+                                                <div className={`w-5 h-5 rounded-full ${PLAYER_COLORS[player.originalIndex % PLAYER_COLORS.length].bg} flex items-center justify-center`}>
                                                     <span className="text-[10px] font-bold text-white">{player.originalIndex + 1}</span>
                                                 </div>
                                                 <span className={`text-sm font-semibold ${i === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-amber-700 dark:text-gray-300'}`}>{player.name}</span>
