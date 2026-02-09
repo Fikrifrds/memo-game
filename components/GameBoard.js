@@ -148,6 +148,7 @@ export default function GameBoard() {
     const [soundEnabled, setSoundEnabledState] = useState(true);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
+    const [continueOnMatch, setContinueOnMatch] = useState(true);
 
     const [bestScore, setBestScore] = useState(null);
 
@@ -181,6 +182,7 @@ export default function GameBoard() {
             setElapsedTime(sg.elapsedTime || 0);
             setTurnTimerEnabled(sg.turnTimerEnabled || false);
             setTurnTimerSeconds(sg.turnTimerSeconds || 30);
+            if (sg.continueOnMatch !== undefined) setContinueOnMatch(sg.continueOnMatch);
 
             // Resume elapsed timer from saved offset
             const resumeOffset = sg.elapsedTime || 0;
@@ -323,6 +325,7 @@ export default function GameBoard() {
                 gameState, cards, turns, difficulty, theme,
                 playerNames, currentPlayerIndex, scores,
                 elapsedTime, turnTimerEnabled, turnTimerSeconds,
+                continueOnMatch,
             }));
         } catch { /* ignore */ }
     }, [gameState, cards, turns, currentPlayerIndex, scores, elapsedTime]);
@@ -426,7 +429,7 @@ export default function GameBoard() {
         setChoiceTwo(null);
         setTurns((prevTurns) => prevTurns + 1);
         setDisabled(false);
-        if (!matched) {
+        if (!matched || !continueOnMatch) {
             setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
         }
         startTurnTimer();
@@ -548,6 +551,29 @@ export default function GameBoard() {
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Continue on Match Setting */}
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
+                            Match Behavior
+                        </label>
+                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30">
+                            <button
+                                onClick={() => setContinueOnMatch(!continueOnMatch)}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${continueOnMatch ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                            >
+                                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${continueOnMatch ? 'translate-x-5' : ''}`} />
+                            </button>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                    {continueOnMatch ? 'Continue on match' : 'Switch turn on match'}
+                                </span>
+                                <span className="text-xs text-amber-500 dark:text-amber-400/70">
+                                    {continueOnMatch ? 'Player keeps playing after a match' : 'Turn switches even after a match'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -822,13 +848,11 @@ export default function GameBoard() {
             {/* Game Grid */}
             <div className="flex-1 w-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
                 <div
-                    className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-5xl`}
+                    className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-6xl`}
                     style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
                 >
                     {cards.map((card, index) => {
-                        const row = Math.floor(index / cols);
-                        const col = index % cols;
-                        const label = `${String.fromCharCode(65 + row)}${col + 1}`;
+                        const label = `${index + 1}`;
                         return (
                         <Card
                             key={card.id}

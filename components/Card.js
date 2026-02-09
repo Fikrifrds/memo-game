@@ -22,20 +22,20 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
 
     const renderContent = () => {
         if (cardType === "emoji") {
-            return <span className="text-2xl sm:text-3xl md:text-4xl select-none drop-shadow-sm">{card.src}</span>;
+            return <span className="text-3xl sm:text-4xl md:text-5xl select-none drop-shadow-sm">{card.src}</span>;
         }
         if (cardType === "clue") {
             return (
                 <div className="flex flex-col items-center justify-center px-1.5 py-0.5 w-full h-full overflow-hidden gap-0.5">
-                    <span className="text-[7px] sm:text-[9px] md:text-[11px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center line-clamp-3 sm:line-clamp-4">{card.src}</span>
-                    <span className="text-[8px] sm:text-[10px] text-orange-500 dark:text-orange-400 opacity-70 select-none">tap to read</span>
+                    <span className="text-[8px] sm:text-[10px] md:text-[13px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center line-clamp-3 sm:line-clamp-4">{card.src}</span>
+                    <span className="text-[9px] sm:text-[11px] text-orange-500 dark:text-orange-400 opacity-70 select-none">tap to read</span>
                 </div>
             );
         }
         if (cardType === "scrambled") {
             return (
                 <div className="flex flex-col items-center gap-0.5 px-1">
-                    <span className="text-xs sm:text-sm font-bold text-purple-500 dark:text-purple-400 tracking-widest font-mono select-none">{card.src}</span>
+                    <span className="text-sm sm:text-base font-bold text-purple-500 dark:text-purple-400 tracking-widest font-mono select-none">{card.src}</span>
                     {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
                 </div>
             );
@@ -43,7 +43,7 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
         // type === "text"
         return (
             <div className="flex flex-col items-center gap-0.5 px-1">
-                <span className="text-sm sm:text-base md:text-lg font-bold select-none leading-tight text-center">{card.src}</span>
+                <span className="text-base sm:text-lg md:text-xl font-bold select-none leading-tight text-center">{card.src}</span>
                 {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
             </div>
         );
@@ -76,8 +76,8 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
 
                 {/* Back of card (hidden side) */}
                 <div className="card-back absolute w-full h-full rounded-xl sm:rounded-2xl backface-hidden shadow-md flex items-center justify-center border-2 border-green-700/40 group-hover:scale-[1.03] group-hover:shadow-lg group-hover:brightness-110 group-focus:scale-[1.03] group-focus:shadow-lg group-focus:ring-2 group-focus:ring-yellow-400 transition-all duration-200">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/25 flex items-center justify-center border border-white/20">
-                        <span className="text-white text-sm sm:text-lg font-bold drop-shadow-sm tabular-nums">{cardNumber}</span>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/25 flex items-center justify-center border border-white/20">
+                        <span className="text-white text-base sm:text-xl font-bold drop-shadow-sm tabular-nums">{cardNumber}</span>
                     </div>
                 </div>
             </div>
