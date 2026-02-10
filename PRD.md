@@ -1,7 +1,7 @@
-# Product Requirements Document (PRD) – Memo Dami Online
+# Product Requirements Document (PRD) – Memo Sprout
 
 ## 1. Product Overview
-**Memo Dami Online** is a web-based digital version of the classic memory-matching game, designed for both solo and multiplayer play. Built with **Next.js, Tailwind CSS, and JavaScript**, the app will include analytics powered by **PostgreSQL** to track user activity, game sessions, and engagement metrics.
+**Memo Sprout** is a web-based digital version of the classic memory-matching game, designed for both solo and multiplayer play. Built with **Next.js, Tailwind CSS, and JavaScript**, the app will include analytics powered by **PostgreSQL** to track user activity, game sessions, and engagement metrics.
 
 ---
 

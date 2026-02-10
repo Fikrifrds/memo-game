@@ -156,13 +156,13 @@ export default function GameBoard() {
     // On mount: load best scores + sound setting + restore saved game if exists
     useEffect(() => {
         try {
-            const savedSound = localStorage.getItem('flipmatch-sound-enabled');
+            const savedSound = localStorage.getItem('memosprout-sound-enabled');
             if (savedSound !== null) {
                 const val = savedSound === 'true';
                 setSoundEnabledState(val);
                 setSoundEnabled(val);
             }
-            const savedVolume = localStorage.getItem('flipmatch-sound-volume');
+            const savedVolume = localStorage.getItem('memosprout-sound-volume');
             if (savedVolume !== null) {
                 const vol = Number(savedVolume);
                 setSoundVolumeState(vol);
@@ -171,7 +171,7 @@ export default function GameBoard() {
         } catch { /* ignore */ }
 
         try {
-            const savedMatchKeepsTurn = localStorage.getItem('flipmatch-match-keeps-turn');
+            const savedMatchKeepsTurn = localStorage.getItem('memosprout-match-keeps-turn');
             if (savedMatchKeepsTurn !== null) {
                 setMatchKeepsTurn(savedMatchKeepsTurn === 'true');
             }
@@ -506,7 +506,7 @@ export default function GameBoard() {
         return (
             <div className="flex items-center justify-center w-full min-h-screen p-3 sm:p-5 bg-gradient-to-b from-sky-200 via-green-100 to-yellow-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
                 {/* Decorative elements */}
-                <div className="fixed top-6 left-8 text-4xl opacity-50 animate-wiggle hidden sm:block">🌻</div>
+                <div className="fixed top-6 left-8 text-4xl opacity-50 animate-wiggle hidden sm:block">🌱</div>
                 <div className="fixed top-20 right-12 text-3xl opacity-40 hidden sm:block">🐝</div>
                 <div className="fixed bottom-16 left-16 text-3xl opacity-40 hidden sm:block">🌿</div>
                 <div className="fixed bottom-10 right-20 text-4xl opacity-50 hidden sm:block">🐞</div>
@@ -515,12 +515,12 @@ export default function GameBoard() {
                     {/* Header */}
                     <div className="text-center mb-6 sm:mb-8">
                         <div className="flex items-center justify-center gap-3 mb-1">
-                            <span className="text-4xl sm:text-5xl">🌻</span>
+                            <span className="text-4xl sm:text-5xl">🌱</span>
                             <h2 className="text-4xl sm:text-5xl font-extrabold text-amber-800 dark:text-amber-200">
-                                FlipMatch
+                                Memo Sprout
                             </h2>
                         </div>
-                        <p className="text-amber-600/70 dark:text-amber-400/70 text-base font-medium mt-1">Match the pairs and have fun!</p>
+                        <p className="text-amber-600/70 dark:text-amber-400/70 text-base font-medium mt-1">Grow your memory, one match at a time!</p>
                     </div>
 
                     {/* Two-column layout: Settings (left) + Players (right) */}
@@ -624,7 +624,7 @@ export default function GameBoard() {
                                             const newVal = !soundEnabled;
                                             setSoundEnabledState(newVal);
                                             setSoundEnabled(newVal);
-                                            try { localStorage.setItem('flipmatch-sound-enabled', String(newVal)); } catch { /* ignore */ }
+                                            try { localStorage.setItem('memosprout-sound-enabled', String(newVal)); } catch { /* ignore */ }
                                             if (newVal) playFlipSound();
                                         }}
                                         className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${soundEnabled
@@ -644,7 +644,7 @@ export default function GameBoard() {
                                         onClick={() => {
                                             const newVal = !matchKeepsTurn;
                                             setMatchKeepsTurn(newVal);
-                                            try { localStorage.setItem('flipmatch-match-keeps-turn', String(newVal)); } catch { /* ignore */ }
+                                            try { localStorage.setItem('memosprout-match-keeps-turn', String(newVal)); } catch { /* ignore */ }
                                         }}
                                         className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${matchKeepsTurn
                                             ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600 shadow-md shadow-green-200/30'
@@ -822,7 +822,7 @@ export default function GameBoard() {
                         {/* Left: Title + Stats */}
                         <div className="flex items-center gap-3 min-w-0">
                             <h1 className="text-lg sm:text-xl font-extrabold text-amber-800 dark:text-amber-200 whitespace-nowrap">
-                                FlipMatch
+                                Memo Sprout
                             </h1>
 
                             <div className="flex items-center gap-1.5">

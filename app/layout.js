@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "FlipMatch",
-  description: "A fun memory matching game for everyone",
+  title: "Memo Sprout",
+  description: "Grow your memory, one match at a time",
 };
 
 export default function RootLayout({ children }) {
