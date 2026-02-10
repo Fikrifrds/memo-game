@@ -22,20 +22,20 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
 
     const renderContent = () => {
         if (cardType === "emoji") {
-            return <span className="text-2xl sm:text-3xl md:text-4xl select-none drop-shadow-sm">{card.src}</span>;
+            return <span className="text-4xl sm:text-5xl md:text-6xl select-none drop-shadow-sm">{card.src}</span>;
         }
         if (cardType === "clue") {
             return (
                 <div className="flex flex-col items-center justify-center px-1.5 py-0.5 w-full h-full overflow-hidden gap-0.5">
-                    <span className="text-[7px] sm:text-[9px] md:text-[11px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center line-clamp-3 sm:line-clamp-4">{card.src}</span>
-                    <span className="text-[8px] sm:text-[10px] text-orange-500 dark:text-orange-400 opacity-70 select-none">tap to read</span>
+                    <span className="text-[9px] sm:text-[11px] md:text-[13px] font-medium italic text-orange-700 dark:text-orange-300 select-none leading-snug text-center line-clamp-3 sm:line-clamp-4">{card.src}</span>
+                    <span className="text-[9px] sm:text-[11px] text-orange-500 dark:text-orange-400 opacity-70 select-none">tap to read</span>
                 </div>
             );
         }
         if (cardType === "scrambled") {
             return (
                 <div className="flex flex-col items-center gap-0.5 px-1">
-                    <span className="text-xs sm:text-sm font-bold text-purple-500 dark:text-purple-400 tracking-widest font-mono select-none">{card.src}</span>
+                    <span className="text-sm sm:text-base font-bold text-purple-500 dark:text-purple-400 tracking-widest font-mono select-none">{card.src}</span>
                     {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
                 </div>
             );
@@ -43,7 +43,7 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
         // type === "text"
         return (
             <div className="flex flex-col items-center gap-0.5 px-1">
-                <span className="text-sm sm:text-base md:text-lg font-bold select-none leading-tight text-center">{card.src}</span>
+                <span className="text-base sm:text-lg md:text-xl font-bold select-none leading-tight text-center">{card.src}</span>
                 {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
             </div>
         );

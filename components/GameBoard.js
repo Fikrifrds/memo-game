@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "./Card";
 import { LEARNING_THEMES } from "@/data/learningThemes";
 import { speak } from "@/utils/speech";
-import { playFlipSound, playCorrectSound, playWrongSound, setSoundEnabled } from "@/utils/sounds";
+import { playFlipSound, playCorrectSound, playWrongSound, setSoundEnabled, setSoundVolume } from "@/utils/sounds";
 
 const THEMES = {
     farm: {
@@ -78,7 +78,7 @@ const PLAYER_COLORS = [
 
 const ALL_THEMES = { ...THEMES, ...LEARNING_THEMES };
 
-const MAX_PLAYERS = 10;
+const MAX_PLAYERS = 20;
 
 function Confetti() {
     const particles = Array.from({ length: 50 }, (_, i) => ({
@@ -146,6 +146,8 @@ export default function GameBoard() {
     const [turnTimerEnabled, setTurnTimerEnabled] = useState(false);
     const [turnTimerSeconds, setTurnTimerSeconds] = useState(30);
     const [soundEnabled, setSoundEnabledState] = useState(true);
+    const [soundVolume, setSoundVolumeState] = useState(100);
+    const [matchKeepsTurn, setMatchKeepsTurn] = useState(true);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
 
@@ -159,6 +161,19 @@ export default function GameBoard() {
                 const val = savedSound === 'true';
                 setSoundEnabledState(val);
                 setSoundEnabled(val);
+            }
+            const savedVolume = localStorage.getItem('flipmatch-sound-volume');
+            if (savedVolume !== null) {
+                const vol = Number(savedVolume);
+                setSoundVolumeState(vol);
+                setSoundVolume(vol / 100);
+            }
+        } catch { /* ignore */ }
+
+        try {
+            const savedMatchKeepsTurn = localStorage.getItem('flipmatch-match-keeps-turn');
+            if (savedMatchKeepsTurn !== null) {
+                setMatchKeepsTurn(savedMatchKeepsTurn === 'true');
             }
         } catch { /* ignore */ }
 
@@ -181,6 +196,7 @@ export default function GameBoard() {
             setElapsedTime(sg.elapsedTime || 0);
             setTurnTimerEnabled(sg.turnTimerEnabled || false);
             setTurnTimerSeconds(sg.turnTimerSeconds || 30);
+            if (sg.matchKeepsTurn !== undefined) setMatchKeepsTurn(sg.matchKeepsTurn);
 
             // Resume elapsed timer from saved offset
             const resumeOffset = sg.elapsedTime || 0;
@@ -322,7 +338,7 @@ export default function GameBoard() {
             localStorage.setItem(SAVE_KEY, JSON.stringify({
                 gameState, cards, turns, difficulty, theme,
                 playerNames, currentPlayerIndex, scores,
-                elapsedTime, turnTimerEnabled, turnTimerSeconds,
+                elapsedTime, turnTimerEnabled, turnTimerSeconds, matchKeepsTurn,
             }));
         } catch { /* ignore */ }
     }, [gameState, cards, turns, currentPlayerIndex, scores, elapsedTime]);
@@ -426,7 +442,7 @@ export default function GameBoard() {
         setChoiceTwo(null);
         setTurns((prevTurns) => prevTurns + 1);
         setDisabled(false);
-        if (!matched) {
+        if (!matched || !matchKeepsTurn) {
             setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
         }
         startTurnTimer();
@@ -444,9 +460,12 @@ export default function GameBoard() {
         }
     }, [cards]);
 
+    const newPlayerRef = useRef(null);
+
     const addPlayer = () => {
         if (playerNames.length < MAX_PLAYERS) {
-            setPlayerNames([...playerNames, `Player ${playerNames.length + 1}`]);
+            setPlayerNames([...playerNames, ""]);
+            setTimeout(() => newPlayerRef.current?.focus(), 50);
         }
     };
 
@@ -462,6 +481,19 @@ export default function GameBoard() {
         setPlayerNames(newNames);
     };
 
+    const shufflePlayers = () => {
+        const shuffled = [...playerNames].sort(() => Math.random() - 0.5);
+        setPlayerNames(shuffled);
+    };
+
+    const movePlayer = (index, direction) => {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= playerNames.length) return;
+        const newNames = [...playerNames];
+        [newNames[index], newNames[newIndex]] = [newNames[newIndex], newNames[index]];
+        setPlayerNames(newNames);
+    };
+
     const formatTime = (ms) => {
         const seconds = Math.floor(ms / 1000);
         const minutes = Math.floor(seconds / 60);
@@ -472,223 +504,287 @@ export default function GameBoard() {
     // ─── SETUP SCREEN ───
     if (gameState === "setup") {
         return (
-            <div className="flex items-center justify-center w-full min-h-screen p-4 bg-gradient-to-b from-sky-200 via-green-100 to-yellow-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
+            <div className="flex items-center justify-center w-full min-h-screen p-3 sm:p-5 bg-gradient-to-b from-sky-200 via-green-100 to-yellow-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
                 {/* Decorative elements */}
                 <div className="fixed top-6 left-8 text-4xl opacity-50 animate-wiggle hidden sm:block">🌻</div>
                 <div className="fixed top-20 right-12 text-3xl opacity-40 hidden sm:block">🐝</div>
                 <div className="fixed bottom-16 left-16 text-3xl opacity-40 hidden sm:block">🌿</div>
                 <div className="fixed bottom-10 right-20 text-4xl opacity-50 hidden sm:block">🐞</div>
 
-                <div className="w-full max-w-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl shadow-amber-900/10 p-8 sm:p-10 space-y-7 border-2 border-amber-200/60 dark:border-amber-800/30">
+                <div className="w-full max-w-5xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl shadow-amber-900/10 p-6 sm:p-10 border-2 border-amber-200/60 dark:border-amber-800/30">
                     {/* Header */}
-                    <div className="text-center space-y-2">
-                        <div className="text-5xl mb-2">🌻</div>
-                        <h2 className="text-4xl font-extrabold text-amber-800 dark:text-amber-200">
-                            FlipMatch
-                        </h2>
-                        <p className="text-amber-600/70 dark:text-amber-400/70 text-sm font-medium">Match the pairs and have fun!</p>
-                    </div>
-
-                    {/* Difficulty Selection */}
-                    <div className="space-y-2.5">
-                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                            Difficulty
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {Object.entries(DIFFICULTIES).map(([diff, config]) => (
-                                <button
-                                    key={diff}
-                                    onClick={() => setDifficulty(diff)}
-                                    className={`relative py-3 px-3 rounded-xl font-bold transition-all duration-200 ${difficulty === diff
-                                        ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25 scale-105 ring-2 ring-green-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
-                                        : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
-                                        }`}
-                                >
-                                    <div className="text-sm">{diff}</div>
-                                    <div className={`text-xs mt-0.5 ${difficulty === diff ? 'text-green-100' : 'text-amber-500 dark:text-amber-400'}`}>
-                                        {config.pairs} pairs
-                                    </div>
-                                </button>
-                            ))}
+                    <div className="text-center mb-6 sm:mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-1">
+                            <span className="text-4xl sm:text-5xl">🌻</span>
+                            <h2 className="text-4xl sm:text-5xl font-extrabold text-amber-800 dark:text-amber-200">
+                                FlipMatch
+                            </h2>
                         </div>
+                        <p className="text-amber-600/70 dark:text-amber-400/70 text-base font-medium mt-1">Match the pairs and have fun!</p>
                     </div>
 
-                    {/* Turn Timer Setting */}
-                    <div className="space-y-2.5">
-                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                            Turn Timer
-                        </label>
-                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30">
-                            <button
-                                onClick={() => setTurnTimerEnabled(!turnTimerEnabled)}
-                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${turnTimerEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                            >
-                                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${turnTimerEnabled ? 'translate-x-5' : ''}`} />
-                            </button>
-                            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                {turnTimerEnabled ? 'On' : 'Off'}
-                            </span>
-                            {turnTimerEnabled && (
-                                <div className="flex items-center gap-2 ml-auto">
+                    {/* Two-column layout: Settings (left) + Players (right) */}
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+
+                        {/* LEFT COLUMN: Game Settings */}
+                        <div className="flex-1 space-y-6 min-w-0">
+                            {/* Difficulty Selection */}
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-wider">
+                                    Difficulty
+                                </label>
+                                <div className="grid grid-cols-3 gap-2.5">
+                                    {Object.entries(DIFFICULTIES).map(([diff, config]) => (
+                                        <button
+                                            key={diff}
+                                            onClick={() => setDifficulty(diff)}
+                                            className={`relative py-3.5 px-3 rounded-2xl font-bold transition-all duration-200 ${difficulty === diff
+                                                ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25 scale-105 ring-2 ring-green-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                                : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
+                                                }`}
+                                        >
+                                            <div className="text-base font-extrabold">{diff}</div>
+                                            <div className={`text-xs mt-0.5 ${difficulty === diff ? 'text-green-100' : 'text-amber-500 dark:text-amber-400'}`}>
+                                                {config.pairs} pairs
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Theme Selection */}
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-wider">
+                                    Classic Themes
+                                </label>
+                                <div className="grid grid-cols-4 gap-2.5">
+                                    {Object.entries(THEMES).map(([key, themeData]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setTheme(key)}
+                                            className={`relative py-3 px-2 rounded-2xl font-bold transition-all duration-200 ${theme === key
+                                                ? "bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-400/25 scale-105 ring-2 ring-orange-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                                : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
+                                                }`}
+                                        >
+                                            <div className="text-2xl sm:text-3xl mb-1">{themeData.icon}</div>
+                                            <div className={`text-xs font-semibold ${theme === key ? 'text-orange-100' : 'text-amber-500 dark:text-amber-400'}`}>
+                                                {themeData.name}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <label className="block text-sm font-bold text-sky-700/70 dark:text-sky-400/70 uppercase tracking-wider mt-4">
+                                    Learn English
+                                </label>
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+                                    {Object.entries(LEARNING_THEMES).map(([key, themeData]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setTheme(key)}
+                                            className={`relative py-3 px-2 rounded-2xl font-bold transition-all duration-200 ${theme === key
+                                                ? "bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-lg shadow-sky-400/25 scale-105 ring-2 ring-sky-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
+                                                : "bg-sky-50 dark:bg-gray-700/50 text-sky-800 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-gray-700 border border-sky-200 dark:border-gray-600"
+                                                }`}
+                                        >
+                                            <div className="text-2xl sm:text-3xl mb-1">{themeData.icon}</div>
+                                            <div className={`text-xs font-semibold ${theme === key ? 'text-sky-100' : 'text-sky-500 dark:text-sky-400'}`}>
+                                                {themeData.name}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Settings Row */}
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-wider">
+                                    Settings
+                                </label>
+                                <div className="grid grid-cols-3 gap-2.5">
+                                    {/* Turn Timer */}
                                     <button
-                                        onClick={() => setTurnTimerSeconds(Math.max(5, turnTimerSeconds - 5))}
-                                        className="w-8 h-8 rounded-lg bg-amber-200 dark:bg-gray-600 text-amber-800 dark:text-amber-200 font-bold text-lg flex items-center justify-center hover:bg-amber-300 dark:hover:bg-gray-500 transition-colors"
+                                        onClick={() => setTurnTimerEnabled(!turnTimerEnabled)}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${turnTimerEnabled
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600 shadow-md shadow-green-200/30'
+                                            : 'bg-amber-50/50 dark:bg-gray-700/40 border-amber-200/50 dark:border-gray-600/30 hover:border-amber-300 dark:hover:border-gray-500'
+                                        }`}
                                     >
-                                        -
+                                        <span className="text-2xl">{turnTimerEnabled ? '⏱️' : '⏱️'}</span>
+                                        <span className={`text-sm font-bold ${turnTimerEnabled ? 'text-green-700 dark:text-green-300' : 'text-amber-700/60 dark:text-amber-400/60'}`}>Timer</span>
+                                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${turnTimerEnabled ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            {turnTimerEnabled ? 'ON' : 'OFF'}
+                                        </span>
                                     </button>
-                                    <div className="flex items-center gap-1 min-w-[60px] justify-center">
-                                        <span className="text-lg font-bold text-amber-800 dark:text-amber-200 tabular-nums">{turnTimerSeconds}</span>
-                                        <span className="text-xs text-amber-600 dark:text-amber-400">sec</span>
-                                    </div>
+
+                                    {/* Sound */}
                                     <button
-                                        onClick={() => setTurnTimerSeconds(Math.min(120, turnTimerSeconds + 5))}
-                                        className="w-8 h-8 rounded-lg bg-amber-200 dark:bg-gray-600 text-amber-800 dark:text-amber-200 font-bold text-lg flex items-center justify-center hover:bg-amber-300 dark:hover:bg-gray-500 transition-colors"
+                                        onClick={() => {
+                                            const newVal = !soundEnabled;
+                                            setSoundEnabledState(newVal);
+                                            setSoundEnabled(newVal);
+                                            try { localStorage.setItem('flipmatch-sound-enabled', String(newVal)); } catch { /* ignore */ }
+                                            if (newVal) playFlipSound();
+                                        }}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${soundEnabled
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600 shadow-md shadow-green-200/30'
+                                            : 'bg-amber-50/50 dark:bg-gray-700/40 border-amber-200/50 dark:border-gray-600/30 hover:border-amber-300 dark:hover:border-gray-500'
+                                        }`}
                                     >
-                                        +
+                                        <span className="text-2xl">{soundEnabled ? '🔊' : '🔇'}</span>
+                                        <span className={`text-sm font-bold ${soundEnabled ? 'text-green-700 dark:text-green-300' : 'text-amber-700/60 dark:text-amber-400/60'}`}>Sound</span>
+                                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${soundEnabled ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            {soundEnabled ? 'ON' : 'OFF'}
+                                        </span>
+                                    </button>
+
+                                    {/* On Match */}
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !matchKeepsTurn;
+                                            setMatchKeepsTurn(newVal);
+                                            try { localStorage.setItem('flipmatch-match-keeps-turn', String(newVal)); } catch { /* ignore */ }
+                                        }}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${matchKeepsTurn
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600 shadow-md shadow-green-200/30'
+                                            : 'bg-amber-50/50 dark:bg-gray-700/40 border-amber-200/50 dark:border-gray-600/30 hover:border-amber-300 dark:hover:border-gray-500'
+                                        }`}
+                                    >
+                                        <span className="text-2xl">{matchKeepsTurn ? '🔄' : '🔀'}</span>
+                                        <span className={`text-sm font-bold ${matchKeepsTurn ? 'text-green-700 dark:text-green-300' : 'text-amber-700/60 dark:text-amber-400/60'}`}>
+                                            {matchKeepsTurn ? 'Keep Turn' : 'Switch'}
+                                        </span>
+                                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${matchKeepsTurn ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            {matchKeepsTurn ? 'KEEP' : 'SWITCH'}
+                                        </span>
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Sound Setting */}
-                    <div className="space-y-2.5">
-                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                            Sound Effects
-                        </label>
-                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30">
-                            <button
-                                onClick={() => {
-                                    const newVal = !soundEnabled;
-                                    setSoundEnabledState(newVal);
-                                    setSoundEnabled(newVal);
-                                    try { localStorage.setItem('flipmatch-sound-enabled', String(newVal)); } catch { /* ignore */ }
-                                    if (newVal) playFlipSound();
-                                }}
-                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${soundEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                            >
-                                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${soundEnabled ? 'translate-x-5' : ''}`} />
-                            </button>
-                            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                {soundEnabled ? 'On' : 'Off'}
-                            </span>
-                            <span className="ml-auto text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
-                        </div>
-                    </div>
-
-                    {/* Theme Selection */}
-                    <div className="space-y-2.5">
-                        <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                            Classic Themes
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {Object.entries(THEMES).map(([key, themeData]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => setTheme(key)}
-                                    className={`relative py-3 px-2 rounded-xl font-bold transition-all duration-200 ${theme === key
-                                        ? "bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-400/25 scale-105 ring-2 ring-orange-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
-                                        : "bg-amber-50 dark:bg-gray-700/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-gray-700 border border-amber-200 dark:border-gray-600"
-                                        }`}
-                                >
-                                    <div className="text-2xl mb-0.5">{themeData.icon}</div>
-                                    <div className={`text-xs ${theme === key ? 'text-orange-100' : 'text-amber-500 dark:text-amber-400'}`}>
-                                        {themeData.name}
+                                {/* Timer seconds adjuster (only when timer is on) */}
+                                {turnTimerEnabled && (
+                                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-800/30">
+                                        <span className="text-sm font-medium text-green-700 dark:text-green-300">Turn time:</span>
+                                        <div className="flex items-center gap-2 ml-auto">
+                                            <button
+                                                onClick={() => setTurnTimerSeconds(Math.max(5, turnTimerSeconds - 5))}
+                                                className="w-8 h-8 rounded-lg bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 font-bold text-lg flex items-center justify-center hover:bg-green-300 dark:hover:bg-green-700 transition-colors"
+                                            >-</button>
+                                            <span className="text-lg font-extrabold text-green-700 dark:text-green-300 tabular-nums w-12 text-center">{turnTimerSeconds}s</span>
+                                            <button
+                                                onClick={() => setTurnTimerSeconds(Math.min(120, turnTimerSeconds + 5))}
+                                                className="w-8 h-8 rounded-lg bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 font-bold text-lg flex items-center justify-center hover:bg-green-300 dark:hover:bg-green-700 transition-colors"
+                                            >+</button>
+                                        </div>
                                     </div>
-                                </button>
-                            ))}
+                                )}
+                            </div>
+
+
                         </div>
 
-                        <label className="block text-xs font-bold text-sky-700/60 dark:text-sky-400/60 uppercase tracking-wider mt-4">
-                            Learn English
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {Object.entries(LEARNING_THEMES).map(([key, themeData]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => setTheme(key)}
-                                    className={`relative py-3 px-2 rounded-xl font-bold transition-all duration-200 ${theme === key
-                                        ? "bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-lg shadow-sky-400/25 scale-105 ring-2 ring-sky-300/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
-                                        : "bg-sky-50 dark:bg-gray-700/50 text-sky-800 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-gray-700 border border-sky-200 dark:border-gray-600"
-                                        }`}
-                                >
-                                    <div className="text-2xl mb-0.5">{themeData.icon}</div>
-                                    <div className={`text-xs ${theme === key ? 'text-sky-100' : 'text-sky-500 dark:text-sky-400'}`}>
-                                        {themeData.name}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Player Setup */}
-                    <div className="space-y-2.5">
-                        <div className="flex justify-between items-center">
-                            <label className="block text-xs font-bold text-amber-700/60 dark:text-amber-400/60 uppercase tracking-wider">
-                                Players ({playerNames.length}/{MAX_PLAYERS})
-                            </label>
-                            <button
-                                onClick={addPlayer}
-                                disabled={playerNames.length >= MAX_PLAYERS}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add
-                            </button>
-                        </div>
-
-                        <div className="space-y-2 max-h-56 overflow-y-auto">
-                            {playerNames.map((name, index) => (
-                                <div
-                                    key={index}
-                                    className="group flex items-center gap-2.5 p-3 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30 hover:border-green-300 dark:hover:border-green-500/30 transition-colors"
-                                >
-                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${PLAYER_COLORS[index % PLAYER_COLORS.length].bg} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                                        {index + 1}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={name}
-                                        onChange={(e) => updatePlayerName(index, e.target.value)}
-                                        className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 outline-none text-sm font-medium transition-colors text-amber-900 dark:text-amber-100"
-                                        placeholder={`Player ${index + 1}`}
-                                        maxLength={20}
-                                    />
+                        {/* RIGHT COLUMN: Players + Start */}
+                        <div className="md:w-80 flex flex-col gap-4">
+                            {/* Player Header */}
+                            <div className="flex justify-between items-center">
+                                <label className="block text-sm font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-wider">
+                                    Players ({playerNames.length}/{MAX_PLAYERS})
+                                </label>
+                                <div className="flex items-center gap-1.5">
                                     {playerNames.length > 1 && (
                                         <button
-                                            onClick={() => removePlayer(index)}
-                                            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                            onClick={shufflePlayers}
+                                            className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                                            title="Shuffle order"
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
+                                            🔀
                                         </button>
                                     )}
+                                    <button
+                                        onClick={addPlayer}
+                                        disabled={playerNames.length >= MAX_PLAYERS}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add
+                                    </button>
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Player List (scrollable) */}
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto flex-1 pr-0.5">
+                                {playerNames.map((name, index) => (
+                                    <div
+                                        key={index}
+                                        className="group flex items-center gap-2 p-2.5 bg-amber-50/50 dark:bg-gray-700/40 rounded-xl border border-amber-200/50 dark:border-gray-600/30 hover:border-green-300 dark:hover:border-green-500/30 transition-colors"
+                                    >
+                                        {/* Reorder buttons */}
+                                        <div className="flex flex-col flex-shrink-0 gap-0.5">
+                                            <button
+                                                onClick={() => movePlayer(index, -1)}
+                                                disabled={index === 0}
+                                                className="text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => movePlayer(index, 1)}
+                                                disabled={index === playerNames.length - 1}
+                                                className="text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <div className={`flex-shrink-0 w-9 h-9 rounded-full ${PLAYER_COLORS[index % PLAYER_COLORS.length].bg} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
+                                            {index + 1}
+                                        </div>
+                                        <input
+                                            ref={index === playerNames.length - 1 ? newPlayerRef : null}
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => updatePlayerName(index, e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    addPlayer();
+                                                }
+                                            }}
+                                            onFocus={(e) => e.target.select()}
+                                            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 outline-none text-sm font-medium transition-colors text-amber-900 dark:text-amber-100"
+                                            placeholder={`Player ${index + 1}`}
+                                            maxLength={20}
+                                        />
+                                        {playerNames.length > 1 && (
+                                            <button
+                                                onClick={() => removePlayer(index)}
+                                                className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Start Game Button */}
+                            <button
+                                onClick={startGame}
+                                className="w-full py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold text-xl shadow-xl shadow-green-600/25 hover:shadow-2xl hover:shadow-green-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 border border-green-400/30 mt-auto"
+                            >
+                                <span>Let&apos;s Play!</span>
+                                <span className="text-2xl">🎮</span>
+                            </button>
                         </div>
                     </div>
-
-                    {/* Best Score Display */}
-                    {bestScore && bestScore[`${theme}-${difficulty}-${playerNames.length}p`] && (
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-300/50 dark:border-yellow-800/30 rounded-xl">
-                            <span className="text-sm">⭐</span>
-                            <span className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-                                Best: {bestScore[`${theme}-${difficulty}-${playerNames.length}p`].moves} moves in {formatTime(bestScore[`${theme}-${difficulty}-${playerNames.length}p`].time)}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Start Game Button */}
-                    <button
-                        onClick={startGame}
-                        className="w-full py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-600/25 hover:shadow-2xl hover:shadow-green-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 border border-green-400/30"
-                    >
-                        <span>Let&apos;s Play!</span>
-                        <span className="text-xl">🎮</span>
-                    </button>
                 </div>
             </div>
         );
@@ -826,9 +922,7 @@ export default function GameBoard() {
                     style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
                 >
                     {cards.map((card, index) => {
-                        const row = Math.floor(index / cols);
-                        const col = index % cols;
-                        const label = `${String.fromCharCode(65 + row)}${col + 1}`;
+                        const label = `${index + 1}`;
                         return (
                         <Card
                             key={card.id}
