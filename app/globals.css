@@ -2,14 +2,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fefce8;
-  --foreground: #422006;
+  --background: #eef2ff;
+  --foreground: #1e293b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1a1207;
-    --foreground: #fef3c7;
+    --background: #0f172a;
+    --foreground: #e2e8f0;
   }
 }
 
@@ -52,7 +52,7 @@ body {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Card back with green gradient + dot pattern */
+  /* Card back with blue gradient + dot pattern */
   .card-back {
     background:
       radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18) 2px, transparent 2px),
@@ -62,7 +62,7 @@ body {
       radial-gradient(circle at 50% 50%, rgba(255,255,255,0.12) 3px, transparent 3px),
       radial-gradient(circle at 10% 50%, rgba(255,255,255,0.12) 2px, transparent 2px),
       radial-gradient(circle at 90% 60%, rgba(255,255,255,0.12) 2px, transparent 2px),
-      linear-gradient(135deg, #22c55e 0%, #10b981 40%, #0d9488 100%);
+      linear-gradient(135deg, #2962FF 0%, #5C6BC0 40%, #3949AB 100%);
   }
 
   /* Match celebration animation */
@@ -83,22 +83,6 @@ body {
 
   .matched-card > div {
     animation: matchCelebration 0.5s ease-out forwards;
-  }
-
-  /* Confetti falling animation */
-  @keyframes confettiFall {
-    0% {
-      transform: translateY(0) rotate(0deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(100vh) rotate(720deg);
-      opacity: 0;
-    }
-  }
-
-  .animate-confetti {
-    animation: confettiFall 3s ease-in forwards;
   }
 
   /* Modal animations */

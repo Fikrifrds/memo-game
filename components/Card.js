@@ -1,6 +1,7 @@
 "use client";
 
-export default function Card({ card, cardNumber, handleChoice, flipped, disabled, onClueClick }) {
+/* eslint-disable @next/next/no-img-element */
+export default function Card({ card, cardNumber, showCardNumbers, showNames, emojiLabel, handleChoice, flipped, disabled, onClueClick }) {
     const handleClick = () => {
         if (flipped && card.type === "clue" && onClueClick) {
             onClueClick(card);
@@ -22,7 +23,14 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
 
     const renderContent = () => {
         if (cardType === "emoji") {
-            return <span className="text-4xl sm:text-5xl md:text-6xl select-none drop-shadow-sm">{card.src}</span>;
+            return (
+                <div className="flex flex-col items-center justify-center gap-0.5">
+                    <span className={`select-none drop-shadow-sm ${showNames && emojiLabel ? 'text-4xl sm:text-5xl md:text-6xl' : 'text-5xl sm:text-6xl md:text-7xl'}`}>{card.src}</span>
+                    {showNames && emojiLabel && (
+                        <span className="text-[9px] sm:text-[11px] font-semibold text-amber-700 dark:text-amber-300 select-none leading-tight text-center truncate max-w-full px-1">{emojiLabel}</span>
+                    )}
+                </div>
+            );
         }
         if (cardType === "clue") {
             return (
@@ -75,10 +83,18 @@ export default function Card({ card, cardNumber, handleChoice, flipped, disabled
                 </div>
 
                 {/* Back of card (hidden side) */}
-                <div className="card-back absolute w-full h-full rounded-xl sm:rounded-2xl backface-hidden shadow-md flex items-center justify-center border-2 border-green-700/40 group-hover:scale-[1.03] group-hover:shadow-lg group-hover:brightness-110 group-focus:scale-[1.03] group-focus:shadow-lg group-focus:ring-2 group-focus:ring-yellow-400 transition-all duration-200">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/25 flex items-center justify-center border border-white/20">
-                        <span className="text-white text-sm sm:text-lg font-bold drop-shadow-sm tabular-nums">{cardNumber}</span>
-                    </div>
+                <div className="card-back absolute w-full h-full rounded-xl sm:rounded-2xl backface-hidden shadow-md flex items-center justify-center border-2 border-blue-700/40 group-hover:scale-[1.03] group-hover:shadow-lg group-hover:brightness-110 group-focus:scale-[1.03] group-focus:shadow-lg group-focus:ring-2 group-focus:ring-blue-400 transition-all duration-200">
+                    {showCardNumbers ? (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/25 flex items-center justify-center border border-white/20">
+                            <span className="text-white text-sm sm:text-lg font-bold drop-shadow-sm tabular-nums">{cardNumber}</span>
+                        </div>
+                    ) : (
+                        <img
+                            src="/logo-with-background.jpeg"
+                            alt="Memo Sprout"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shadow-sm"
+                        />
+                    )}
                 </div>
             </div>
         </div>
