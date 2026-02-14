@@ -351,6 +351,7 @@ export default function GameBoard() {
     const [showFlipCount, setShowFlipCount] = useState(false);
     const [cardEntryKey, setCardEntryKey] = useState(0);
     const [vsComputer, setVsComputer] = useState(false);
+    const [computerDifficulty, setComputerDifficulty] = useState("medium"); // "easy" | "medium" | "hard"
     const computerMemoryRef = useRef(new Map());
     const activePlayerRef = useRef(null);
     const [computerTurnInProgress, setComputerTurnInProgress] = useState(false);
@@ -414,6 +415,10 @@ export default function GameBoard() {
             const savedVsComputer = localStorage.getItem('flipmatch-vs-computer');
             if (savedVsComputer !== null) {
                 setVsComputer(savedVsComputer === 'true');
+            }
+            const savedComputerDiff = localStorage.getItem('flipmatch-computer-difficulty');
+            if (savedComputerDiff && ["easy", "medium", "hard"].includes(savedComputerDiff)) {
+                setComputerDifficulty(savedComputerDiff);
             }
         } catch { /* ignore */ }
 
@@ -655,13 +660,14 @@ export default function GameBoard() {
         if (choiceOne && choiceTwo) {
             setDisabled(true);
 
-            // Computer memory: record flipped cards (with 25% forget chance)
+            // Computer memory: record flipped cards (forget chance based on difficulty)
             if (vsComputer) {
+                const forgetChance = computerDifficulty === "easy" ? 0.60 : computerDifficulty === "hard" ? 0.05 : 0.25;
                 const mem = computerMemoryRef.current;
-                if (Math.random() > 0.25) {
+                if (Math.random() > forgetChance) {
                     mem.set(choiceOne.id, { src: choiceOne.src, pairId: choiceOne.pairId });
                 }
-                if (Math.random() > 0.25) {
+                if (Math.random() > forgetChance) {
                     mem.set(choiceTwo.id, { src: choiceTwo.src, pairId: choiceTwo.pairId });
                 }
             }
@@ -769,11 +775,20 @@ export default function GameBoard() {
         startTurnTimer();
     };
 
-    // Computer AI: pick a card based on memory
+    // Computer AI: pick a card based on memory + difficulty
     const computerPickCard = useCallback((excludeId) => {
         const mem = computerMemoryRef.current;
         const available = cards.filter(c => !c.matched && c.id !== excludeId);
         if (available.length === 0) return null;
+
+        // Chance to use memory vs picking randomly (difficulty-based)
+        const useMemoryChance = computerDifficulty === "easy" ? 0.30 : computerDifficulty === "hard" ? 1.0 : 0.75;
+        const useMemory = Math.random() < useMemoryChance;
+
+        // If not using memory this turn, just pick random
+        if (!useMemory) {
+            return available[Math.floor(Math.random() * available.length)];
+        }
 
         // If we have a first card (excludeId provided), try to find its match in memory
         if (excludeId) {
@@ -815,7 +830,7 @@ export default function GameBoard() {
 
         // No known pair — pick random
         return available[Math.floor(Math.random() * available.length)];
-    }, [cards]);
+    }, [cards, computerDifficulty]);
     computerPickCardRef.current = computerPickCard;
     cardsRef.current = cards;
 
@@ -833,23 +848,26 @@ export default function GameBoard() {
             setDisabled(true);
             setComputerTurnInProgress(true);
 
-            // Natural thinking delays
-            let maxThink1 = 2000;
-            let maxThink2 = 1800;
+            // Thinking delays by difficulty: easy=fast/casual, medium=moderate, hard=deliberate
+            const delayConfig = computerDifficulty === "easy"
+                ? { min1: 500, max1: 1200, min2: 400, max2: 1000 }
+                : computerDifficulty === "hard"
+                    ? { min1: 1000, max1: 2500, min2: 1000, max2: 2200 }
+                    : { min1: 800, max1: 2000, min2: 800, max2: 1800 };
+
+            let { min1, max1, min2, max2 } = delayConfig;
             if (turnTimerEnabled && turnTimerSeconds) {
-                maxThink1 = Math.min(2000, turnTimerSeconds * 350);
-                maxThink2 = Math.min(1800, turnTimerSeconds * 300);
+                max1 = Math.min(max1, turnTimerSeconds * 350);
+                max2 = Math.min(max2, turnTimerSeconds * 300);
             }
 
-            // First card: scanning the board (0.8s - 2.0s)
-            const delay1 = 800 + Math.random() * (maxThink1 - 800);
+            const delay1 = min1 + Math.random() * (max1 - min1);
             computerTimeoutRef.current = setTimeout(() => {
                 const firstCard = computerPickCardRef.current(null);
                 if (!firstCard) return;
                 handleChoiceRef.current(firstCard);
 
-                // Second card: recall & decide (0.8s - 1.8s)
-                const delay2 = 800 + Math.random() * (maxThink2 - 800);
+                const delay2 = min2 + Math.random() * (max2 - min2);
                 computerTimeoutRef.current = setTimeout(() => {
                     const secondCard = computerPickCardRef.current(firstCard.id);
                     if (!secondCard) return;
@@ -879,21 +897,26 @@ export default function GameBoard() {
         setDisabled(true);
         setComputerTurnInProgress(true);
 
-        // Shorter delay after a match — computer is "on a roll" (0.6s - 1.4s)
-        let maxThink1 = 1400;
-        let maxThink2 = 1200;
+        // Shorter delay after a match — computer is "on a roll"
+        const keepDelayConfig = computerDifficulty === "easy"
+            ? { min1: 400, max1: 900, min2: 300, max2: 700 }
+            : computerDifficulty === "hard"
+                ? { min1: 800, max1: 1800, min2: 700, max2: 1500 }
+                : { min1: 600, max1: 1400, min2: 600, max2: 1200 };
+
+        let { min1, max1, min2, max2 } = keepDelayConfig;
         if (turnTimerEnabled && turnTimerSeconds) {
-            maxThink1 = Math.min(1400, turnTimerSeconds * 300);
-            maxThink2 = Math.min(1200, turnTimerSeconds * 250);
+            max1 = Math.min(max1, turnTimerSeconds * 300);
+            max2 = Math.min(max2, turnTimerSeconds * 250);
         }
 
-        const delay1 = 600 + Math.random() * (maxThink1 - 600);
+        const delay1 = min1 + Math.random() * (max1 - min1);
         computerTimeoutRef.current = setTimeout(() => {
             const firstCard = computerPickCardRef.current(null);
             if (!firstCard) return;
             handleChoiceRef.current(firstCard);
 
-            const delay2 = 600 + Math.random() * (maxThink2 - 600);
+            const delay2 = min2 + Math.random() * (max2 - min2);
             computerTimeoutRef.current = setTimeout(() => {
                 const secondCard = computerPickCardRef.current(firstCard.id);
                 if (!secondCard) return;
@@ -1367,6 +1390,28 @@ export default function GameBoard() {
                                             </svg>
                                         </div>
                                         <span className="text-sm font-bold text-purple-700 dark:text-purple-300">Computer</span>
+                                    </div>
+                                    {/* Computer Difficulty */}
+                                    <div className="flex gap-1.5 mt-1">
+                                        {[
+                                            { key: "easy", label: cardLang === "id" ? "Mudah" : "Easy", emoji: "🐣" },
+                                            { key: "medium", label: cardLang === "id" ? "Sedang" : "Medium", emoji: "🦊" },
+                                            { key: "hard", label: cardLang === "id" ? "Sulit" : "Hard", emoji: "🧠" },
+                                        ].map(({ key, label, emoji }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => {
+                                                    setComputerDifficulty(key);
+                                                    try { localStorage.setItem('flipmatch-computer-difficulty', key); } catch { /* ignore */ }
+                                                }}
+                                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${computerDifficulty === key
+                                                    ? key === "easy" ? 'bg-green-500 text-white shadow-sm' : key === "hard" ? 'bg-red-500 text-white shadow-sm' : 'bg-purple-500 text-white shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                }`}
+                                            >
+                                                <span className="mr-1">{emoji}</span>{label}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             ) : (
