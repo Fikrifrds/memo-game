@@ -37,7 +37,7 @@ body {
   }
 
   .perspective-1000 {
-    perspective: 1000px;
+    perspective: 800px;
   }
 
   .no-scrollbar {
@@ -65,6 +65,11 @@ body {
       linear-gradient(135deg, #2962FF 0%, #5C6BC0 40%, #3949AB 100%);
   }
 
+  /* Smooth 3D card flip transition */
+  .card-inner {
+    transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
   /* Match celebration animation */
   @keyframes matchCelebration {
     0%, 100% {
@@ -83,6 +88,56 @@ body {
 
   .matched-card > div {
     animation: matchCelebration 0.5s ease-out forwards;
+  }
+
+  /* Streak glow effects */
+  @keyframes streakGlow {
+    0%, 100% { box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.6); }
+  }
+
+  @keyframes streakGlowHot {
+    0%, 100% { box-shadow: 0 0 10px 3px rgba(245, 158, 11, 0.5); }
+    50% { box-shadow: 0 0 22px 6px rgba(245, 158, 11, 0.7); }
+  }
+
+  @keyframes streakGlowEpic {
+    0%, 100% { box-shadow: 0 0 12px 3px rgba(168, 85, 247, 0.5); }
+    50% { box-shadow: 0 0 28px 8px rgba(168, 85, 247, 0.8); }
+  }
+
+  .streak-glow {
+    animation: streakGlow 1.2s ease-in-out 2;
+    border-radius: 0.75rem;
+  }
+
+  .streak-glow-hot {
+    animation: streakGlowHot 1s ease-in-out 2;
+    border-radius: 0.75rem;
+  }
+
+  .streak-glow-epic {
+    animation: streakGlowEpic 0.8s ease-in-out 3;
+    border-radius: 0.75rem;
+  }
+
+  /* Streak toast animation */
+  @keyframes streakPop {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.5) translateY(10px);
+    }
+    50% {
+      transform: translateX(-50%) scale(1.1) translateY(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1) translateY(0);
+    }
+  }
+
+  .animate-streakPop {
+    animation: streakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Modal animations */

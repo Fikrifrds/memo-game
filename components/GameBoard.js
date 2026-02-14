@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "./Card";
 import { LEARNING_THEMES } from "@/data/learningThemes";
 import { speak } from "@/utils/speech";
-import { playFlipSound, playCorrectSound, playWrongSound, setSoundEnabled, setSoundVolume } from "@/utils/sounds";
+import { playFlipSound, playCorrectSound, playWrongSound, playStreakSound, setSoundEnabled, setSoundVolume } from "@/utils/sounds";
 
 const EMOJI_LABELS = {
     // Farm
@@ -268,8 +268,12 @@ export default function GameBoard() {
     const [matchKeepsTurn, setMatchKeepsTurn] = useState(true);
     const [showCardNumbers, setShowCardNumbers] = useState(true);
     const [showNames, setShowNames] = useState(true);
+    const [speakOnFlip, setSpeakOnFlip] = useState(false);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
+    const [streak, setStreak] = useState(0);
+    const [streakDisplay, setStreakDisplay] = useState(null);
+    const lastMatchedStreakRef = useRef(0);
 
     const [bestScore, setBestScore] = useState(null);
     const [showHistory, setShowHistory] = useState(false);
@@ -305,6 +309,10 @@ export default function GameBoard() {
             const savedShowNames = localStorage.getItem('flipmatch-show-names');
             if (savedShowNames !== null) {
                 setShowNames(savedShowNames === 'true');
+            }
+            const savedSpeakOnFlip = localStorage.getItem('flipmatch-speak-on-flip');
+            if (savedSpeakOnFlip !== null) {
+                setSpeakOnFlip(savedSpeakOnFlip === 'true');
             }
         } catch { /* ignore */ }
 
@@ -484,6 +492,9 @@ export default function GameBoard() {
         setPlayerNames(trimmedNames);
         setCurrentPlayerIndex(Math.floor(Math.random() * trimmedNames.length));
         setScores(new Array(trimmedNames.length).fill(0));
+        setStreak(0);
+        setStreakDisplay(null);
+        lastMatchedStreakRef.current = 0;
         shuffleCards();
         setGameState("playing");
         startTimer();
@@ -495,6 +506,9 @@ export default function GameBoard() {
         stopTurnTimer();
         setScores(new Array(playerNames.length).fill(0));
         setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
+        setStreak(0);
+        setStreakDisplay(null);
+        lastMatchedStreakRef.current = 0;
         shuffleCards();
         setGameState("playing");
         startTimer();
@@ -510,6 +524,13 @@ export default function GameBoard() {
     const handleChoice = (card) => {
         if (choiceOne && choiceOne.id === card.id) return;
         playFlipSound();
+        // Speak the card name after flip animation completes (~450ms delay)
+        if (speakOnFlip && !isLearningTheme) {
+            const label = EMOJI_LABELS[card.src];
+            if (label) {
+                setTimeout(() => speak(label, "en-US"), 450);
+            }
+        }
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
     };
 
@@ -526,11 +547,22 @@ export default function GameBoard() {
 
             if (isMatch) {
                 playCorrectSound();
+                const newStreak = streak + 1;
+                setStreak(newStreak);
+                lastMatchedStreakRef.current = newStreak;
+
+                // Show streak toast + play streak sound for 2+ consecutive matches
+                if (newStreak >= 2) {
+                    setStreakDisplay(newStreak);
+                    setTimeout(() => setStreakDisplay(null), 1800);
+                    playStreakSound(newStreak);
+                }
+
                 const matchKey = choiceOne.pairId || choiceOne.src;
                 setCards((prevCards) =>
                     prevCards.map((card) => {
                         const cardKey = card.pairId || card.src;
-                        return cardKey === matchKey ? { ...card, matched: true } : card;
+                        return cardKey === matchKey ? { ...card, matched: true, matchStreak: newStreak } : card;
                     })
                 );
                 setScores(prev => {
@@ -568,6 +600,8 @@ export default function GameBoard() {
                 resetTurn(true);
             } else {
                 playWrongSound();
+                setStreak(0);
+                lastMatchedStreakRef.current = 0;
                 setTimeout(() => resetTurn(false), 1000);
             }
         }
@@ -827,8 +861,8 @@ export default function GameBoard() {
                                     </button>
                                 </div>
 
-                                {/* Card Numbers & Show Names */}
-                                <div className="grid grid-cols-2 gap-2">
+                                {/* Card Numbers, Show Names & Speak Card */}
+                                <div className="grid grid-cols-3 gap-2">
                                     {/* Card Numbers */}
                                     <button
                                         onClick={() => {
@@ -868,6 +902,28 @@ export default function GameBoard() {
                                         <span className={`text-xs font-bold ${showNames ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}>Show Names</span>
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${showNames ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                             {showNames ? 'ON' : 'OFF'}
+                                        </span>
+                                    </button>
+
+                                    {/* Speak Card */}
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !speakOnFlip;
+                                            setSpeakOnFlip(newVal);
+                                            try { localStorage.setItem('flipmatch-speak-on-flip', String(newVal)); } catch { /* ignore */ }
+                                            if (newVal) speak("Cow", "en-US");
+                                        }}
+                                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${speakOnFlip
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                                            : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600/30 hover:border-gray-300 dark:hover:border-gray-500'
+                                        }`}
+                                    >
+                                        <svg className={`w-5 h-5 ${speakOnFlip ? 'text-blue-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4-4h8m-4-12a3 3 0 00-3 3v4a3 3 0 006 0V7a3 3 0 00-3-3z" />
+                                        </svg>
+                                        <span className={`text-xs font-bold ${speakOnFlip ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}>Speak Card</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${speakOnFlip ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            {speakOnFlip ? 'ON' : 'OFF'}
                                         </span>
                                     </button>
                                 </div>
@@ -1330,6 +1386,7 @@ export default function GameBoard() {
                             flipped={card === choiceOne || card === choiceTwo || card.matched}
                             disabled={disabled}
                             onClueClick={(c) => setClueDrawer(c.src)}
+                            streakCount={card.matchStreak || 0}
                         />
                         );
                     })}
@@ -1345,6 +1402,22 @@ export default function GameBoard() {
                             {matchFeedback.cardA.src} = {matchFeedback.cardB.src}
                         </div>
                         <span className="text-lg">🔊</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Streak Toast */}
+            {streakDisplay && streakDisplay >= 2 && (
+                <div className="fixed top-20 left-1/2 z-40 animate-streakPop pointer-events-none">
+                    <div className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-2xl border-2 ${
+                        streakDisplay >= 5
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-purple-300 text-white'
+                            : streakDisplay >= 3
+                                ? 'bg-gradient-to-r from-amber-400 to-orange-500 border-amber-300 text-white'
+                                : 'bg-gradient-to-r from-blue-400 to-indigo-500 border-blue-300 text-white'
+                    }`}>
+                        <span className="text-2xl">{streakDisplay >= 5 ? '🔥' : streakDisplay >= 3 ? '⚡' : '✨'}</span>
+                        <span className="text-lg font-extrabold">{streakDisplay}x Streak!</span>
                     </div>
                 </div>
             )}
@@ -1409,7 +1482,7 @@ export default function GameBoard() {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-md p-4 animate-fadeIn">
                     <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-md w-full animate-scaleIn overflow-hidden">
                         {/* Gradient header band */}
-                        <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 px-6 pt-8 pb-12 text-center overflow-hidden">
+                        <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 px-6 pt-7 pb-6 text-center overflow-hidden">
                             {/* Subtle decorative circles */}
                             <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
                             <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
@@ -1431,9 +1504,9 @@ export default function GameBoard() {
                             )}
                         </div>
 
-                        {/* Stats bar - overlaps the header */}
-                        <div className="px-5 -mt-6">
-                            <div className="flex justify-between bg-white dark:bg-gray-800 rounded-2xl shadow-lg shadow-blue-900/10 dark:shadow-black/20 border border-blue-100 dark:border-gray-700 px-3 py-3.5">
+                        {/* Stats bar */}
+                        <div className="px-5 py-4">
+                            <div className="flex justify-between bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 px-3 py-3.5">
                                 <div className="flex-1 text-center">
                                     <div className="text-xs text-gray-400 dark:text-gray-500 font-medium mb-0.5">Time</div>
                                     <div className="text-base font-bold text-gray-800 dark:text-gray-100 tabular-nums">{formatTime(elapsedTime)}</div>
@@ -1453,7 +1526,7 @@ export default function GameBoard() {
 
                         {/* Player Rankings */}
                         {rankedPlayers && (
-                            <div className="px-5 mt-4">
+                            <div className="px-5 -mt-1">
                                 <div className="space-y-2 max-h-52 overflow-y-auto no-scrollbar">
                                     {rankedPlayers.map((player, i) => (
                                         <div key={i} className={`flex items-center gap-3 px-3.5 py-3 rounded-xl ${i === 0

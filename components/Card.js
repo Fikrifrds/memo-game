@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-export default function Card({ card, cardNumber, showCardNumbers, showNames, emojiLabel, handleChoice, flipped, disabled, onClueClick }) {
+export default function Card({ card, cardNumber, showCardNumbers, showNames, emojiLabel, handleChoice, flipped, disabled, onClueClick, streakCount }) {
     const handleClick = () => {
         if (flipped && card.type === "clue" && onClueClick) {
             onClueClick(card);
@@ -65,9 +65,18 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
         return 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700';
     };
 
+    // Determine glow class based on streak
+    const glowClass = card.matched && streakCount >= 2
+        ? streakCount >= 5
+            ? 'streak-glow-epic'
+            : streakCount >= 3
+                ? 'streak-glow-hot'
+                : 'streak-glow'
+        : '';
+
     return (
         <div
-            className={`relative w-full h-full min-h-0 cursor-pointer group perspective-1000 ${card.matched ? 'matched-card' : ''}`}
+            className={`relative w-full h-full min-h-0 cursor-pointer group perspective-1000 ${card.matched ? 'matched-card' : ''} ${glowClass}`}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             tabIndex={flipped || disabled ? -1 : 0}
@@ -75,7 +84,7 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
             aria-label={flipped ? `Card: ${card.src}` : "Hidden card"}
         >
             <div
-                className={`relative w-full h-full duration-500 transform-style-3d transition-all ${flipped ? "rotate-y-180" : ""}`}
+                className={`card-inner relative w-full h-full transform-style-3d transition-transform ${flipped ? "rotate-y-180" : ""}`}
             >
                 {/* Front of card (content side) */}
                 <div className={`absolute w-full h-full border-2 rounded-xl sm:rounded-2xl flex items-center justify-center backface-hidden rotate-y-180 shadow-md ${frontBg()}`}>
