@@ -7,70 +7,138 @@ import { speak } from "@/utils/speech";
 import { playFlipSound, playCorrectSound, playWrongSound, playStreakSound, setSoundEnabled, setSoundVolume } from "@/utils/sounds";
 
 const EMOJI_LABELS = {
-    // Farm
-    '🐄': 'Cow', '🐔': 'Chicken', '🦢': 'Swan', '🐑': 'Sheep',
-    '🐴': 'Horse', '🐇': 'Rabbit', '🐈': 'Cat', '🐓': 'Rooster',
-    '🦆': 'Duck', '🐐': 'Goat', '🐎': 'Pony', '🐈‍⬛': 'Black Cat',
-    '🐏': 'Ram', '🦃': 'Turkey', '🕊️': 'Dove', '🐂': 'Ox',
-    '🐃': 'Buffalo', '🐮': 'Cow Face', '🐣': 'Chick', '🦜': 'Parrot',
-    '🦙': 'Llama', '🐪': 'Camel', '🦚': 'Peacock', '🦤': 'Dodo',
-    // Garden
-    '🌻': 'Sunflower', '🌷': 'Tulip', '🌹': 'Rose', '🌺': 'Hibiscus',
-    '🌸': 'Blossom', '🌼': 'Daisy', '🏵️': 'Rosette', '🪻': 'Hyacinth',
-    '🌾': 'Rice', '🌰': 'Chestnut', '🌿': 'Herb', '🌵': 'Cactus',
-    '🥀': 'Wilted', '🪴': 'Plant', '🌱': 'Seedling', '🍃': 'Leaf',
-    '🌳': 'Tree', '🌴': 'Palm', '🪹': 'Nest', '🍁': 'Maple',
-    '🍂': 'Fallen Leaf', '🪺': 'Eggs', '🪷': 'Lotus', '🫘': 'Beans',
-    // Fruits
-    '🍎': 'Apple', '🍌': 'Banana', '🍇': 'Grapes', '🍊': 'Orange',
-    '🍓': 'Strawberry', '🍉': 'Watermelon', '🍑': 'Peach', '🍒': 'Cherry',
-    '🥝': 'Kiwi', '🍍': 'Pineapple', '🥭': 'Mango', '🫐': 'Blueberry',
-    '🍋': 'Lemon', '🥥': 'Coconut', '🍈': 'Melon', '🍐': 'Pear',
-    '🫒': 'Olive', '🥑': 'Avocado', '🍅': 'Tomato', '🫑': 'Pepper',
-    '🥒': 'Cucumber', '🌽': 'Corn', '🥕': 'Carrot', '🍆': 'Eggplant',
-    // Animals
-    '🦊': 'Fox', '🐻': 'Bear', '🐼': 'Panda', '🐨': 'Koala',
-    '🐯': 'Tiger', '🦁': 'Lion', '🐵': 'Monkey', '🐘': 'Elephant',
-    '🦒': 'Giraffe', '🦓': 'Zebra', '🐆': 'Leopard', '🦘': 'Kangaroo',
-    '🦛': 'Hippo', '🦏': 'Rhino', '🐊': 'Crocodile', '🦈': 'Shark',
-    '🐋': 'Whale', '🐬': 'Dolphin', '🦅': 'Eagle', '🦉': 'Owl',
-    '🦩': 'Flamingo', '🐧': 'Penguin', '🐺': 'Wolf', '🦇': 'Bat',
-    // Food
-    '🍕': 'Pizza', '🍔': 'Burger', '🌮': 'Taco', '🍜': 'Noodles',
-    '🍣': 'Sushi', '🧁': 'Cupcake', '🎂': 'Cake', '🍩': 'Donut',
-    '🍪': 'Cookie', '🥐': 'Croissant', '🥯': 'Bagel', '🧇': 'Waffle',
-    '🥞': 'Pancakes', '🍰': 'Shortcake', '🥧': 'Pie', '🍫': 'Chocolate',
-    '☕': 'Coffee', '🧃': 'Juice', '🥤': 'Drink', '🍵': 'Tea',
-    '🧈': 'Butter', '🥨': 'Pretzel', '🥖': 'Bread', '🍿': 'Popcorn',
-    // Ocean
-    '🐙': 'Octopus', '🦑': 'Squid', '🐠': 'Tropical Fish',
-    '🐡': 'Blowfish', '🐳': 'Spouting Whale', '🦐': 'Shrimp',
-    '🦞': 'Lobster', '🦀': 'Crab', '🐚': 'Shell',
-    '🪸': 'Coral', '🦭': 'Seal', '🪼': 'Jellyfish',
-    '🦦': 'Otter', '🐢': 'Turtle', '🦪': 'Oyster',
-    '🌊': 'Wave', '🏝️': 'Island', '🐟': 'Fish',
-    '⚓': 'Anchor', '🚢': 'Ship', '🧜': 'Merperson',
-    // Sports
-    '⚽': 'Football', '🏀': 'Basketball', '🏈': 'Rugby Ball', '⚾': 'Baseball',
-    '🎾': 'Tennis', '🏐': 'Volleyball', '🏉': 'Rugby', '🏒': 'Hockey',
-    '🏓': 'Ping Pong', '🏸': 'Badminton', '🥊': 'Boxing', '🥋': 'Martial Arts',
-    '🥅': 'Goal', '🏹': 'Archery', '🥇': 'Gold', '🥈': 'Silver',
-    '🥉': 'Bronze', '🏅': 'Medal', '🎿': 'Skiing', '🛷': 'Sled',
-    '⛸️': 'Ice Skate', '🥏': 'Frisbee', '🪃': 'Boomerang', '🏏': 'Cricket',
-    // Flags
-    '🏁': 'Finish', '🚩': 'Flag', '🇲🇾': 'Malaysia', '🏴': 'Black Flag',
-    '🏳️': 'White Flag', '🇺🇸': 'USA', '🇬🇧': 'UK', '🇫🇷': 'France',
-    '🇩🇪': 'Germany', '🇯🇵': 'Japan', '🇰🇷': 'Korea', '🇨🇳': 'China',
-    '🇮🇳': 'India', '🇧🇷': 'Brazil', '🇦🇺': 'Australia', '🇨🇦': 'Canada',
-    '🇮🇹': 'Italy', '🇪🇸': 'Spain', '🇲🇽': 'Mexico', '🇹🇷': 'Turkey',
-    '🇮🇩': 'Indonesia', '🇸🇦': 'Saudi', '🇪🇬': 'Egypt', '🇿🇦': 'S. Africa',
-    // Transport
-    '🚗': 'Car', '🚕': 'Taxi', '🚌': 'Bus', '🚎': 'Trolley',
-    '🏎️': 'Race Car', '🚓': 'Police', '🚑': 'Ambulance', '🚒': 'Fire Truck',
-    '🚐': 'Minibus', '🛻': 'Pickup', '🚚': 'Truck', '🚛': 'Lorry',
-    '🚜': 'Tractor', '🏍️': 'Motorcycle', '🛵': 'Scooter', '🚲': 'Bicycle',
-    '🛴': 'Kick Scooter', '🚂': 'Train', '🚆': 'Railway', '🚇': 'Metro',
-    '🚈': 'Light Rail', '✈️': 'Airplane', '🚁': 'Helicopter', '🛶': 'Canoe',
+    en: {
+        // Farm
+        '🐄': 'Cow', '🐔': 'Chicken', '🦢': 'Swan', '🐑': 'Sheep',
+        '🐴': 'Horse', '🐇': 'Rabbit', '🐈': 'Cat', '🐓': 'Rooster',
+        '🦆': 'Duck', '🐐': 'Goat', '🐎': 'Pony', '🐈‍⬛': 'Black Cat',
+        '🐏': 'Ram', '🦃': 'Turkey', '🕊️': 'Dove', '🐂': 'Ox',
+        '🐃': 'Buffalo', '🐮': 'Cow Face', '🐣': 'Chick', '🦜': 'Parrot',
+        '🦙': 'Llama', '🐪': 'Camel', '🦚': 'Peacock', '🦤': 'Dodo',
+        // Garden
+        '🌻': 'Sunflower', '🌷': 'Tulip', '🌹': 'Rose', '🌺': 'Hibiscus',
+        '🌸': 'Blossom', '🌼': 'Daisy', '🏵️': 'Rosette', '🪻': 'Hyacinth',
+        '🌾': 'Rice', '🌰': 'Chestnut', '🌿': 'Herb', '🌵': 'Cactus',
+        '🥀': 'Wilted', '🪴': 'Plant', '🌱': 'Seedling', '🍃': 'Leaf',
+        '🌳': 'Tree', '🌴': 'Palm', '🪹': 'Nest', '🍁': 'Maple',
+        '🍂': 'Fallen Leaf', '🪺': 'Eggs', '🪷': 'Lotus', '🫘': 'Beans',
+        // Fruits
+        '🍎': 'Apple', '🍌': 'Banana', '🍇': 'Grapes', '🍊': 'Orange',
+        '🍓': 'Strawberry', '🍉': 'Watermelon', '🍑': 'Peach', '🍒': 'Cherry',
+        '🥝': 'Kiwi', '🍍': 'Pineapple', '🥭': 'Mango', '🫐': 'Blueberry',
+        '🍋': 'Lemon', '🥥': 'Coconut', '🍈': 'Melon', '🍐': 'Pear',
+        '🫒': 'Olive', '🥑': 'Avocado', '🍅': 'Tomato', '🫑': 'Pepper',
+        '🥒': 'Cucumber', '🌽': 'Corn', '🥕': 'Carrot', '🍆': 'Eggplant',
+        // Animals
+        '🦊': 'Fox', '🐻': 'Bear', '🐼': 'Panda', '🐨': 'Koala',
+        '🐯': 'Tiger', '🦁': 'Lion', '🐵': 'Monkey', '🐘': 'Elephant',
+        '🦒': 'Giraffe', '🦓': 'Zebra', '🐆': 'Leopard', '🦘': 'Kangaroo',
+        '🦛': 'Hippo', '🦏': 'Rhino', '🐊': 'Crocodile', '🦈': 'Shark',
+        '🐋': 'Whale', '🐬': 'Dolphin', '🦅': 'Eagle', '🦉': 'Owl',
+        '🦩': 'Flamingo', '🐧': 'Penguin', '🐺': 'Wolf', '🦇': 'Bat',
+        // Food
+        '🍕': 'Pizza', '🍔': 'Burger', '🌮': 'Taco', '🍜': 'Noodles',
+        '🍣': 'Sushi', '🧁': 'Cupcake', '🎂': 'Cake', '🍩': 'Donut',
+        '🍪': 'Cookie', '🥐': 'Croissant', '🥯': 'Bagel', '🧇': 'Waffle',
+        '🥞': 'Pancakes', '🍰': 'Shortcake', '🥧': 'Pie', '🍫': 'Chocolate',
+        '☕': 'Coffee', '🧃': 'Juice', '🥤': 'Drink', '🍵': 'Tea',
+        '🧈': 'Butter', '🥨': 'Pretzel', '🥖': 'Bread', '🍿': 'Popcorn',
+        // Ocean
+        '🐙': 'Octopus', '🦑': 'Squid', '🐠': 'Tropical Fish',
+        '🐡': 'Blowfish', '🐳': 'Spouting Whale', '🦐': 'Shrimp',
+        '🦞': 'Lobster', '🦀': 'Crab', '🐚': 'Shell',
+        '🪸': 'Coral', '🦭': 'Seal', '🪼': 'Jellyfish',
+        '🦦': 'Otter', '🐢': 'Turtle', '🦪': 'Oyster',
+        '🌊': 'Wave', '🏝️': 'Island', '🐟': 'Fish',
+        '⚓': 'Anchor', '🚢': 'Ship', '🧜': 'Merperson',
+        // Sports
+        '⚽': 'Football', '🏀': 'Basketball', '🏈': 'Rugby Ball', '⚾': 'Baseball',
+        '🎾': 'Tennis', '🏐': 'Volleyball', '🏉': 'Rugby', '🏒': 'Hockey',
+        '🏓': 'Ping Pong', '🏸': 'Badminton', '🥊': 'Boxing', '🥋': 'Martial Arts',
+        '🥅': 'Goal', '🏹': 'Archery', '🥇': 'Gold', '🥈': 'Silver',
+        '🥉': 'Bronze', '🏅': 'Medal', '🎿': 'Skiing', '🛷': 'Sled',
+        '⛸️': 'Ice Skate', '🥏': 'Frisbee', '🪃': 'Boomerang', '🏏': 'Cricket',
+        // Flags
+        '🏁': 'Finish', '🚩': 'Flag', '🇲🇾': 'Malaysia', '🏴': 'Black Flag',
+        '🏳️': 'White Flag', '🇺🇸': 'USA', '🇬🇧': 'UK', '🇫🇷': 'France',
+        '🇩🇪': 'Germany', '🇯🇵': 'Japan', '🇰🇷': 'Korea', '🇨🇳': 'China',
+        '🇮🇳': 'India', '🇧🇷': 'Brazil', '🇦🇺': 'Australia', '🇨🇦': 'Canada',
+        '🇮🇹': 'Italy', '🇪🇸': 'Spain', '🇲🇽': 'Mexico', '🇹🇷': 'Turkey',
+        '🇮🇩': 'Indonesia', '🇸🇦': 'Saudi', '🇪🇬': 'Egypt', '🇿🇦': 'S. Africa',
+        // Transport
+        '🚗': 'Car', '🚕': 'Taxi', '🚌': 'Bus', '🚎': 'Trolley',
+        '🏎️': 'Race Car', '🚓': 'Police', '🚑': 'Ambulance', '🚒': 'Fire Truck',
+        '🚐': 'Minibus', '🛻': 'Pickup', '🚚': 'Truck', '🚛': 'Lorry',
+        '🚜': 'Tractor', '🏍️': 'Motorcycle', '🛵': 'Scooter', '🚲': 'Bicycle',
+        '🛴': 'Kick Scooter', '🚂': 'Train', '🚆': 'Railway', '🚇': 'Metro',
+        '🚈': 'Light Rail', '✈️': 'Airplane', '🚁': 'Helicopter', '🛶': 'Canoe',
+    },
+    id: {
+        // Farm
+        '🐄': 'Sapi', '🐔': 'Ayam', '🦢': 'Angsa', '🐑': 'Domba',
+        '🐴': 'Kuda', '🐇': 'Kelinci', '🐈': 'Kucing', '🐓': 'Ayam Jantan',
+        '🦆': 'Bebek', '🐐': 'Kambing', '🐎': 'Kuda Poni', '🐈‍⬛': 'Kucing Hitam',
+        '🐏': 'Domba Jantan', '🦃': 'Kalkun', '🕊️': 'Merpati', '🐂': 'Banteng',
+        '🐃': 'Kerbau', '🐮': 'Muka Sapi', '🐣': 'Anak Ayam', '🦜': 'Burung Beo',
+        '🦙': 'Llama', '🐪': 'Unta', '🦚': 'Merak', '🦤': 'Dodo',
+        // Garden
+        '🌻': 'Bunga Matahari', '🌷': 'Tulip', '🌹': 'Mawar', '🌺': 'Kembang Sepatu',
+        '🌸': 'Sakura', '🌼': 'Aster', '🏵️': 'Roset', '🪻': 'Hyacinth',
+        '🌾': 'Padi', '🌰': 'Kastanye', '🌿': 'Herba', '🌵': 'Kaktus',
+        '🥀': 'Layu', '🪴': 'Tanaman', '🌱': 'Tunas', '🍃': 'Daun',
+        '🌳': 'Pohon', '🌴': 'Palem', '🪹': 'Sarang', '🍁': 'Maple',
+        '🍂': 'Daun Gugur', '🪺': 'Telur', '🪷': 'Teratai', '🫘': 'Kacang',
+        // Fruits
+        '🍎': 'Apel', '🍌': 'Pisang', '🍇': 'Anggur', '🍊': 'Jeruk',
+        '🍓': 'Stroberi', '🍉': 'Semangka', '🍑': 'Persik', '🍒': 'Ceri',
+        '🥝': 'Kiwi', '🍍': 'Nanas', '🥭': 'Mangga', '🫐': 'Blueberry',
+        '🍋': 'Lemon', '🥥': 'Kelapa', '🍈': 'Melon', '🍐': 'Pir',
+        '🫒': 'Zaitun', '🥑': 'Alpukat', '🍅': 'Tomat', '🫑': 'Paprika',
+        '🥒': 'Mentimun', '🌽': 'Jagung', '🥕': 'Wortel', '🍆': 'Terong',
+        // Animals
+        '🦊': 'Rubah', '🐻': 'Beruang', '🐼': 'Panda', '🐨': 'Koala',
+        '🐯': 'Harimau', '🦁': 'Singa', '🐵': 'Monyet', '🐘': 'Gajah',
+        '🦒': 'Jerapah', '🦓': 'Zebra', '🐆': 'Macan Tutul', '🦘': 'Kanguru',
+        '🦛': 'Kuda Nil', '🦏': 'Badak', '🐊': 'Buaya', '🦈': 'Hiu',
+        '🐋': 'Paus', '🐬': 'Lumba-lumba', '🦅': 'Elang', '🦉': 'Burung Hantu',
+        '🦩': 'Flamingo', '🐧': 'Penguin', '🐺': 'Serigala', '🦇': 'Kelelawar',
+        // Food
+        '🍕': 'Pizza', '🍔': 'Burger', '🌮': 'Taco', '🍜': 'Mie',
+        '🍣': 'Sushi', '🧁': 'Cupcake', '🎂': 'Kue', '🍩': 'Donat',
+        '🍪': 'Kukis', '🥐': 'Croissant', '🥯': 'Bagel', '🧇': 'Wafel',
+        '🥞': 'Panekuk', '🍰': 'Kue Pendek', '🥧': 'Pai', '🍫': 'Cokelat',
+        '☕': 'Kopi', '🧃': 'Jus', '🥤': 'Minuman', '🍵': 'Teh',
+        '🧈': 'Mentega', '🥨': 'Pretzel', '🥖': 'Roti', '🍿': 'Popcorn',
+        // Ocean
+        '🐙': 'Gurita', '🦑': 'Cumi', '🐠': 'Ikan Tropis',
+        '🐡': 'Ikan Buntal', '🐳': 'Paus Biru', '🦐': 'Udang',
+        '🦞': 'Lobster', '🦀': 'Kepiting', '🐚': 'Kerang',
+        '🪸': 'Karang', '🦭': 'Anjing Laut', '🪼': 'Ubur-ubur',
+        '🦦': 'Berang-berang', '🐢': 'Kura-kura', '🦪': 'Tiram',
+        '🌊': 'Ombak', '🏝️': 'Pulau', '🐟': 'Ikan',
+        '⚓': 'Jangkar', '🚢': 'Kapal', '🧜': 'Duyung',
+        // Sports
+        '⚽': 'Sepak Bola', '🏀': 'Basket', '🏈': 'Rugby', '⚾': 'Bisbol',
+        '🎾': 'Tenis', '🏐': 'Voli', '🏉': 'Rugby', '🏒': 'Hoki',
+        '🏓': 'Tenis Meja', '🏸': 'Bulu Tangkis', '🥊': 'Tinju', '🥋': 'Bela Diri',
+        '🥅': 'Gawang', '🏹': 'Panahan', '🥇': 'Emas', '🥈': 'Perak',
+        '🥉': 'Perunggu', '🏅': 'Medali', '🎿': 'Ski', '🛷': 'Kereta Luncur',
+        '⛸️': 'Sepatu Es', '🥏': 'Frisbee', '🪃': 'Bumerang', '🏏': 'Kriket',
+        // Flags
+        '🏁': 'Finish', '🚩': 'Bendera', '🇲🇾': 'Malaysia', '🏴': 'Bendera Hitam',
+        '🏳️': 'Bendera Putih', '🇺🇸': 'Amerika', '🇬🇧': 'Inggris', '🇫🇷': 'Prancis',
+        '🇩🇪': 'Jerman', '🇯🇵': 'Jepang', '🇰🇷': 'Korea', '🇨🇳': 'Tiongkok',
+        '🇮🇳': 'India', '🇧🇷': 'Brasil', '🇦🇺': 'Australia', '🇨🇦': 'Kanada',
+        '🇮🇹': 'Italia', '🇪🇸': 'Spanyol', '🇲🇽': 'Meksiko', '🇹🇷': 'Turki',
+        '🇮🇩': 'Indonesia', '🇸🇦': 'Saudi', '🇪🇬': 'Mesir', '🇿🇦': 'Afrika Selatan',
+        // Transport
+        '🚗': 'Mobil', '🚕': 'Taksi', '🚌': 'Bus', '🚎': 'Troli',
+        '🏎️': 'Mobil Balap', '🚓': 'Polisi', '🚑': 'Ambulans', '🚒': 'Pemadam',
+        '🚐': 'Minibus', '🛻': 'Pikap', '🚚': 'Truk', '🚛': 'Truk Besar',
+        '🚜': 'Traktor', '🏍️': 'Motor', '🛵': 'Skuter', '🚲': 'Sepeda',
+        '🛴': 'Otoped', '🚂': 'Kereta', '🚆': 'Kereta Api', '🚇': 'Metro',
+        '🚈': 'Kereta Ringan', '✈️': 'Pesawat', '🚁': 'Helikopter', '🛶': 'Kano',
+    },
 };
 
 const THEMES = {
@@ -269,6 +337,7 @@ export default function GameBoard() {
     const [showCardNumbers, setShowCardNumbers] = useState(true);
     const [showNames, setShowNames] = useState(true);
     const [speakOnFlip, setSpeakOnFlip] = useState(false);
+    const [cardLang, setCardLang] = useState("en");
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
     const [streak, setStreak] = useState(0);
@@ -313,6 +382,10 @@ export default function GameBoard() {
             const savedSpeakOnFlip = localStorage.getItem('flipmatch-speak-on-flip');
             if (savedSpeakOnFlip !== null) {
                 setSpeakOnFlip(savedSpeakOnFlip === 'true');
+            }
+            const savedCardLang = localStorage.getItem('flipmatch-card-lang');
+            if (savedCardLang === 'id' || savedCardLang === 'en') {
+                setCardLang(savedCardLang);
             }
         } catch { /* ignore */ }
 
@@ -524,11 +597,11 @@ export default function GameBoard() {
     const handleChoice = (card) => {
         if (choiceOne && choiceOne.id === card.id) return;
         playFlipSound();
-        // Speak the card name after flip animation completes (~450ms delay)
-        if (speakOnFlip && !isLearningTheme) {
-            const label = EMOJI_LABELS[card.src];
+        // Speak card name on flip (first card only, second card handled by match/mismatch)
+        if (speakOnFlip && !isLearningTheme && !choiceOne) {
+            const label = EMOJI_LABELS[cardLang][card.src];
             if (label) {
-                setTimeout(() => speak(label, "en-US"), 450);
+                setTimeout(() => speak(label, cardLang === "id" ? "id-ID" : "en-US"), 400);
             }
         }
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
@@ -571,6 +644,11 @@ export default function GameBoard() {
                     return newScores;
                 });
 
+                // Classic theme: say "Matched!" when pair found
+                if (speakOnFlip && !isLearningTheme) {
+                    setTimeout(() => speak(cardLang === "id" ? "Cocok!" : "Matched!", cardLang === "id" ? "id-ID" : "en-US"), 400);
+                }
+
                 // Learning mode: TTS + feedback toast
                 if (isLearningTheme && choiceOne.pairId) {
                     const themeData = ALL_THEMES[theme];
@@ -602,6 +680,13 @@ export default function GameBoard() {
                 playWrongSound();
                 setStreak(0);
                 lastMatchedStreakRef.current = 0;
+                // Speak second card name on mismatch
+                if (speakOnFlip && !isLearningTheme) {
+                    const label = EMOJI_LABELS[cardLang][choiceTwo.src];
+                    if (label) {
+                        setTimeout(() => speak(label, cardLang === "id" ? "id-ID" : "en-US"), 400);
+                    }
+                }
                 setTimeout(() => resetTurn(false), 1000);
             }
         }
@@ -632,6 +717,15 @@ export default function GameBoard() {
             const sortedPlayers = playerNames
                 .map((name, i) => ({ name, score: scores[i] }))
                 .sort((a, b) => b.score - a.score);
+
+            // Announce winner with speech
+            setTimeout(() => {
+                if (playerNames.length > 1) {
+                    speak(cardLang === "id" ? `${sortedPlayers[0].name} menang!` : `${sortedPlayers[0].name} wins!`, cardLang === "id" ? "id-ID" : "en-US");
+                } else {
+                    speak(cardLang === "id" ? "Selesai!" : "Completed!", cardLang === "id" ? "id-ID" : "en-US");
+                }
+            }, 500);
             const updated = saveRecentGame({
                 theme,
                 themeName: themeData?.name || theme,
@@ -911,7 +1005,7 @@ export default function GameBoard() {
                                             const newVal = !speakOnFlip;
                                             setSpeakOnFlip(newVal);
                                             try { localStorage.setItem('flipmatch-speak-on-flip', String(newVal)); } catch { /* ignore */ }
-                                            if (newVal) speak("Cow", "en-US");
+                                            if (newVal) speak(cardLang === "id" ? "Sapi" : "Cow", cardLang === "id" ? "id-ID" : "en-US");
                                         }}
                                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${speakOnFlip
                                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
@@ -924,6 +1018,25 @@ export default function GameBoard() {
                                         <span className={`text-xs font-bold ${speakOnFlip ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}>Speak Card</span>
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${speakOnFlip ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                             {speakOnFlip ? 'ON' : 'OFF'}
+                                        </span>
+                                    </button>
+
+                                    {/* Language Toggle */}
+                                    <button
+                                        onClick={() => {
+                                            const newLang = cardLang === "en" ? "id" : "en";
+                                            setCardLang(newLang);
+                                            try { localStorage.setItem('flipmatch-card-lang', newLang); } catch { /* ignore */ }
+                                        }}
+                                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${cardLang === "id"
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
+                                            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                                        }`}
+                                    >
+                                        <span className="text-lg">{cardLang === "id" ? "🇮🇩" : "🇬🇧"}</span>
+                                        <span className={`text-xs font-bold ${cardLang === "id" ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}`}>Language</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cardLang === "id" ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                            {cardLang === "id" ? 'ID' : 'EN'}
                                         </span>
                                     </button>
                                 </div>
@@ -1381,7 +1494,7 @@ export default function GameBoard() {
                             cardNumber={gridLabel}
                             showCardNumbers={showCardNumbers}
                             showNames={showNames}
-                            emojiLabel={EMOJI_LABELS[card.src]}
+                            emojiLabel={EMOJI_LABELS[cardLang][card.src]}
                             handleChoice={handleChoice}
                             flipped={card === choiceOne || card === choiceTwo || card.matched}
                             disabled={disabled}
@@ -1408,7 +1521,7 @@ export default function GameBoard() {
 
             {/* Streak Toast */}
             {streakDisplay && streakDisplay >= 2 && (
-                <div className="fixed top-20 left-1/2 z-40 animate-streakPop pointer-events-none">
+                <div className="fixed top-20 inset-x-0 z-40 flex justify-center pointer-events-none animate-streakPop">
                     <div className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-2xl border-2 ${
                         streakDisplay >= 5
                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-purple-300 text-white'
