@@ -210,7 +210,7 @@ const THEMES = {
     ocean: {
         name: "Ocean",
         nameId: "Laut",
-        icon: "🐙",
+        icon: "🐬",
         cards: [
             { src: "🐙", matched: false }, { src: "🦑", matched: false }, { src: "🐠", matched: false }, { src: "🐡", matched: false },
             { src: "🐳", matched: false }, { src: "🦐", matched: false }, { src: "🦞", matched: false }, { src: "🦀", matched: false },
