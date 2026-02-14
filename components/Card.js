@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-export default function Card({ card, cardNumber, showCardNumbers, showNames, emojiLabel, handleChoice, flipped, disabled, onClueClick, streakCount }) {
+export default function Card({ card, cardNumber, showCardNumbers, showNames, emojiLabel, handleChoice, flipped, disabled, onClueClick, streakCount, flipCount, entryDelay }) {
     const handleClick = () => {
         if (flipped && card.type === "clue" && onClueClick) {
             onClueClick(card);
@@ -44,7 +44,7 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
             return (
                 <div className="flex flex-col items-center gap-0.5 px-1">
                     <span className="text-sm sm:text-base font-bold text-purple-500 dark:text-purple-400 tracking-widest font-mono select-none">{card.src}</span>
-                    {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
+                    {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "\u{1F1EC}\u{1F1E7}" : "\u{1F1EE}\u{1F1E9}"}</span>}
                 </div>
             );
         }
@@ -52,7 +52,7 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
         return (
             <div className="flex flex-col items-center gap-0.5 px-1">
                 <span className="text-base sm:text-lg md:text-xl font-bold select-none leading-tight text-center">{card.src}</span>
-                {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "🇬🇧" : "🇮🇩"}</span>}
+                {card.lang && <span className="text-[10px] opacity-60">{card.lang === "en" ? "\u{1F1EC}\u{1F1E7}" : "\u{1F1EE}\u{1F1E9}"}</span>}
             </div>
         );
     };
@@ -76,7 +76,8 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
 
     return (
         <div
-            className={`relative w-full h-full min-h-0 cursor-pointer group perspective-1000 ${card.matched ? 'matched-card' : ''} ${glowClass}`}
+            className={`relative w-full h-full min-h-0 cursor-pointer group perspective-1000 ${card.matched ? 'matched-card' : ''} ${glowClass} animate-cardEntry`}
+            style={entryDelay != null ? { animationDelay: `${entryDelay}ms` } : undefined}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             tabIndex={flipped || disabled ? -1 : 0}
@@ -103,6 +104,12 @@ export default function Card({ card, cardNumber, showCardNumbers, showNames, emo
                             alt="Memo Sprout"
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shadow-sm"
                         />
+                    )}
+                    {/* Flip counter badge */}
+                    {flipCount > 0 && !card.matched && (
+                        <div className="absolute top-1 right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                            <span className="text-white text-[10px] sm:text-xs font-bold tabular-nums">{flipCount}</span>
+                        </div>
                     )}
                 </div>
             </div>

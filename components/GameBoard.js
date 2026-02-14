@@ -338,6 +338,9 @@ export default function GameBoard() {
     const [showNames, setShowNames] = useState(true);
     const [speakOnFlip, setSpeakOnFlip] = useState(false);
     const [cardLang, setCardLang] = useState("en");
+    const [flipCounts, setFlipCounts] = useState({});
+    const [showFlipCount, setShowFlipCount] = useState(false);
+    const [cardEntryKey, setCardEntryKey] = useState(0);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
     const [streak, setStreak] = useState(0);
@@ -386,6 +389,10 @@ export default function GameBoard() {
             const savedCardLang = localStorage.getItem('flipmatch-card-lang');
             if (savedCardLang === 'id' || savedCardLang === 'en') {
                 setCardLang(savedCardLang);
+            }
+            const savedFlipCount = localStorage.getItem('flipmatch-show-flip-count');
+            if (savedFlipCount !== null) {
+                setShowFlipCount(savedFlipCount === 'true');
             }
         } catch { /* ignore */ }
 
@@ -545,6 +552,8 @@ export default function GameBoard() {
         setCards(shuffledCards);
         setTurns(0);
         setDisabled(false);
+        setFlipCounts({});
+        setCardEntryKey(k => k + 1);
     }, [difficulty, theme]);
 
     // Auto-save game state to localStorage when playing
@@ -597,6 +606,8 @@ export default function GameBoard() {
     const handleChoice = (card) => {
         if (choiceOne && choiceOne.id === card.id) return;
         playFlipSound();
+        // Track flip count per card
+        setFlipCounts(prev => ({ ...prev, [card.id]: (prev[card.id] || 0) + 1 }));
         // Speak card name on flip (first card only, second card handled by match/mismatch)
         if (speakOnFlip && !isLearningTheme && !choiceOne) {
             const label = EMOJI_LABELS[cardLang][card.src];
@@ -955,8 +966,8 @@ export default function GameBoard() {
                                     </button>
                                 </div>
 
-                                {/* Card Numbers, Show Names & Speak Card */}
-                                <div className="grid grid-cols-3 gap-2">
+                                {/* Card Numbers, Show Names, Speak Card, Flip Count, Language */}
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                     {/* Card Numbers */}
                                     <button
                                         onClick={() => {
@@ -1018,6 +1029,27 @@ export default function GameBoard() {
                                         <span className={`text-xs font-bold ${speakOnFlip ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}>Speak Card</span>
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${speakOnFlip ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                             {speakOnFlip ? 'ON' : 'OFF'}
+                                        </span>
+                                    </button>
+
+                                    {/* Flip Counter */}
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !showFlipCount;
+                                            setShowFlipCount(newVal);
+                                            try { localStorage.setItem('flipmatch-show-flip-count', String(newVal)); } catch { /* ignore */ }
+                                        }}
+                                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${showFlipCount
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                                            : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600/30 hover:border-gray-300 dark:hover:border-gray-500'
+                                        }`}
+                                    >
+                                        <svg className={`w-5 h-5 ${showFlipCount ? 'text-blue-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span className={`text-xs font-bold ${showFlipCount ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}>Flip Count</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${showFlipCount ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            {showFlipCount ? 'ON' : 'OFF'}
                                         </span>
                                     </button>
 
@@ -1489,7 +1521,7 @@ export default function GameBoard() {
                         const gridLabel = `${String.fromCharCode(65 + row)}${col + 1}`;
                         return (
                         <Card
-                            key={card.id}
+                            key={`${cardEntryKey}-${card.id}`}
                             card={card}
                             cardNumber={gridLabel}
                             showCardNumbers={showCardNumbers}
@@ -1500,6 +1532,8 @@ export default function GameBoard() {
                             disabled={disabled}
                             onClueClick={(c) => setClueDrawer(c.src)}
                             streakCount={card.matchStreak || 0}
+                            flipCount={showFlipCount ? (flipCounts[card.id] || 0) : 0}
+                            entryDelay={index * 30}
                         />
                         );
                     })}
@@ -1591,6 +1625,34 @@ export default function GameBoard() {
                 const winnerName = rankedPlayers ? rankedPlayers[0].name : null;
                 const isSolo = playerNames.length <= 1;
 
+                // Star rating: based on moves vs optimal (totalPairs = perfect)
+                const ratio = turns / totalPairs;
+                const starCount = ratio <= 1.5 ? 3 : ratio <= 2.5 ? 2 : 1;
+
+                const handleShare = async () => {
+                    const themeData = ALL_THEMES[theme];
+                    const stars = Array(starCount).fill('\u2B50').join('');
+                    const text = [
+                        `${themeData?.icon || ''} Flip Match - ${themeData?.name || theme}`,
+                        stars,
+                        `${cardLang === "id" ? "Waktu" : "Time"}: ${formatTime(elapsedTime)}`,
+                        `${cardLang === "id" ? "Langkah" : "Moves"}: ${turns}`,
+                        `${cardLang === "id" ? "Pasangan" : "Pairs"}: ${matchedCount}/${totalPairs}`,
+                        winnerName ? `${cardLang === "id" ? "Pemenang" : "Winner"}: ${winnerName}` : '',
+                        '',
+                        'flipmatch.mlola.com',
+                    ].filter(Boolean).join('\n');
+
+                    if (navigator.share) {
+                        try { await navigator.share({ text }); } catch { /* cancelled */ }
+                    } else {
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            alert(cardLang === "id" ? "Tersalin!" : "Copied!");
+                        } catch { /* ignore */ }
+                    }
+                };
+
                 return (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-md p-4 animate-fadeIn">
                     <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-md w-full animate-scaleIn overflow-hidden">
@@ -1609,6 +1671,30 @@ export default function GameBoard() {
                             <p className="text-blue-100 text-sm font-medium">
                                 {isSolo ? 'All pairs matched' : 'Final Results'}
                             </p>
+
+                            {/* Star Rating */}
+                            <div
+                                className="flex flex-col items-center gap-1 mt-3 group/stars relative cursor-help"
+                                title={cardLang === "id"
+                                    ? `\u2B50\u2B50\u2B50 = \u2264${Math.floor(totalPairs * 1.5)} langkah\n\u2B50\u2B50 = \u2264${Math.floor(totalPairs * 2.5)} langkah\n\u2B50 = >${Math.floor(totalPairs * 2.5)} langkah`
+                                    : `\u2B50\u2B50\u2B50 = \u2264${Math.floor(totalPairs * 1.5)} moves\n\u2B50\u2B50 = \u2264${Math.floor(totalPairs * 2.5)} moves\n\u2B50 = >${Math.floor(totalPairs * 2.5)} moves`
+                                }
+                            >
+                                <div className="flex gap-2">
+                                    {[1, 2, 3].map((s) => (
+                                        <span
+                                            key={s}
+                                            className={`text-3xl animate-starPop ${s <= starCount ? 'drop-shadow-lg' : 'opacity-30'}`}
+                                            style={{ animationDelay: `${300 + s * 150}ms` }}
+                                        >
+                                            {s <= starCount ? '\u2B50' : '\u2606'}
+                                        </span>
+                                    ))}
+                                </div>
+                                <span className="text-[10px] text-blue-200 font-medium opacity-0 group-hover/stars:opacity-100 transition-opacity">
+                                    {cardLang === "id" ? `${turns} dari ${Math.floor(totalPairs * 1.5)} langkah optimal` : `${turns} of ${Math.floor(totalPairs * 1.5)} optimal moves`}
+                                </span>
+                            </div>
 
                             {isNewBest && (
                                 <div className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-400/90 text-yellow-900 rounded-full text-xs font-bold animate-bounce shadow-md">
@@ -1680,6 +1766,13 @@ export default function GameBoard() {
                                 className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
                             >
                                 Play Again
+                            </button>
+                            <button
+                                onClick={handleShare}
+                                className="py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-green-600/20"
+                                title="Share"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             </button>
                         </div>
                     </div>
