@@ -13,7 +13,7 @@ const EMOJI_LABELS = {
         '🐴': 'Horse', '🐇': 'Rabbit', '🐈': 'Cat', '🐓': 'Rooster',
         '🦆': 'Duck', '🐐': 'Goat', '🐎': 'Pony', '🐈‍⬛': 'Black Cat',
         '🐏': 'Ram', '🦃': 'Turkey', '🕊️': 'Dove', '🐂': 'Ox',
-        '🐃': 'Buffalo', '🐮': 'Cow Face', '🐣': 'Chick', '🦜': 'Parrot',
+        '🐃': 'Buffalo', '🦌': 'Deer', '🐣': 'Chick', '🦜': 'Parrot',
         '🦙': 'Llama', '🐪': 'Camel', '🦚': 'Peacock', '🦤': 'Dodo',
         // Garden
         '🌻': 'Sunflower', '🌷': 'Tulip', '🌹': 'Rose', '🌺': 'Hibiscus',
@@ -79,7 +79,7 @@ const EMOJI_LABELS = {
         '🐴': 'Kuda', '🐇': 'Kelinci', '🐈': 'Kucing', '🐓': 'Ayam Jantan',
         '🦆': 'Bebek', '🐐': 'Kambing', '🐎': 'Kuda Poni', '🐈‍⬛': 'Kucing Hitam',
         '🐏': 'Domba Jantan', '🦃': 'Kalkun', '🕊️': 'Merpati', '🐂': 'Banteng',
-        '🐃': 'Kerbau', '🐮': 'Muka Sapi', '🐣': 'Anak Ayam', '🦜': 'Burung Beo',
+        '🐃': 'Kerbau', '🦌': 'Rusa', '🐣': 'Anak Ayam', '🦜': 'Burung Beo',
         '🦙': 'Llama', '🐪': 'Unta', '🦚': 'Merak', '🦤': 'Dodo',
         // Garden
         '🌻': 'Bunga Matahari', '🌷': 'Tulip', '🌹': 'Mawar', '🌺': 'Kembang Sepatu',
@@ -151,7 +151,7 @@ const THEMES = {
             { src: "🐴", matched: false }, { src: "🐇", matched: false }, { src: "🐈", matched: false }, { src: "🐓", matched: false },
             { src: "🦆", matched: false }, { src: "🐐", matched: false }, { src: "🐎", matched: false }, { src: "🐈‍⬛", matched: false },
             { src: "🐏", matched: false }, { src: "🦃", matched: false }, { src: "🕊️", matched: false }, { src: "🐂", matched: false },
-            { src: "🐃", matched: false }, { src: "🐮", matched: false }, { src: "🐣", matched: false }, { src: "🦜", matched: false },
+            { src: "🐃", matched: false }, { src: "🦌", matched: false }, { src: "🐣", matched: false }, { src: "🦜", matched: false },
             { src: "🦙", matched: false }, { src: "🐪", matched: false }, { src: "🦚", matched: false }, { src: "🦤", matched: false },
         ]
     },
@@ -352,6 +352,7 @@ export default function GameBoard() {
     const [cardEntryKey, setCardEntryKey] = useState(0);
     const [vsComputer, setVsComputer] = useState(false);
     const computerMemoryRef = useRef(new Map());
+    const activePlayerRef = useRef(null);
     const [computerTurnInProgress, setComputerTurnInProgress] = useState(false);
     const computerTimeoutRef = useRef(null);
     const handleChoiceRef = useRef(null);
@@ -906,6 +907,13 @@ export default function GameBoard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [computerTurnTrigger]);
 
+    // Auto-scroll active player into view
+    useEffect(() => {
+        if (activePlayerRef.current) {
+            activePlayerRef.current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }, [currentPlayerIndex]);
+
     const [isNewBest, setIsNewBest] = useState(false);
     useEffect(() => {
         if (cards.length > 0 && cards.every((card) => card.matched)) {
@@ -1004,7 +1012,7 @@ export default function GameBoard() {
     // ─── SETUP SCREEN ───
     if (gameState === "setup") {
         return (
-            <div className="flex items-center justify-center w-full min-h-screen p-3 sm:p-5 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-white dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
+            <div className="flex md:items-center justify-center w-full min-h-screen p-3 sm:p-5 pb-24 md:pb-5 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-white dark:from-gray-900 dark:via-gray-850 dark:to-gray-800 overflow-y-auto">
 
                 <div className="w-full max-w-5xl bg-white dark:bg-gray-800/95 rounded-3xl shadow-xl shadow-blue-900/8 p-5 sm:p-8 border border-blue-100 dark:border-gray-700/50">
                     {/* Header */}
@@ -1458,10 +1466,10 @@ export default function GameBoard() {
                                 </>
                             )}
 
-                            {/* Start Game Button */}
+                            {/* Start Game Button — visible on md+ inside the card */}
                             <button
                                 onClick={startGame}
-                                className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/25 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 mt-auto"
+                                className="hidden md:flex w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/25 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 items-center justify-center gap-2 mt-auto"
                             >
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z" />
@@ -1470,6 +1478,19 @@ export default function GameBoard() {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* Floating Start Button — mobile only */}
+                <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white via-white to-white/0 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900/0 z-40">
+                    <button
+                        onClick={startGame}
+                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-600/30 hover:shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                        <span>Let&apos;s Play!</span>
+                    </button>
                 </div>
 
                 {/* History Modal */}
@@ -1655,12 +1676,10 @@ export default function GameBoard() {
 
     // Grid columns and rows for fitting to screen
     const cols = DIFFICULTIES[difficulty].cols;
-    const totalCards = DIFFICULTIES[difficulty].pairs * 2;
-    const rows = Math.ceil(totalCards / cols);
     const gridColsClass = {
         4: "grid-cols-3 sm:grid-cols-4",
         6: "grid-cols-4 sm:grid-cols-6",
-        8: "grid-cols-4 sm:grid-cols-6 md:grid-cols-8",
+        8: "grid-cols-6 sm:grid-cols-8",
     }[cols];
 
     const matchedCount = cards.filter(c => c.matched).length / 2;
@@ -1746,7 +1765,7 @@ export default function GameBoard() {
 
                     {/* Player Scoreboard */}
                     {playerNames.length > 1 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <div className="flex gap-1.5 mt-2.5 overflow-x-auto no-scrollbar">
                             {playerNames.map((name, index) => {
                                 const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
                                 const isActive = index === currentPlayerIndex;
@@ -1754,7 +1773,11 @@ export default function GameBoard() {
                                 return (
                                     <div
                                         key={index}
-                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-300 border ${isActive
+                                        ref={isActive ? activePlayerRef : null}
+                                        className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-300 border ${isActive
+                                            ? 'scale-105 z-10'
+                                            : ''
+                                        } ${isActive
                                             ? isComputerPlayer
                                                 ? 'bg-purple-500 border-white/30 shadow-md text-white'
                                                 : `${color.bg} border-white/30 shadow-md text-white`
@@ -1795,10 +1818,10 @@ export default function GameBoard() {
             </header>
 
             {/* Game Grid */}
-            <div className="flex-1 w-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+            <div className="flex-1 w-full flex items-center justify-center p-1.5 sm:p-4 overflow-hidden">
                 <div
-                    className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-5xl`}
-                    style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
+                    className={`grid ${gridColsClass} gap-1 sm:gap-2 w-full h-full max-w-5xl transition-all duration-300 ${computerTurnInProgress ? 'opacity-85 pointer-events-none' : ''}`}
+                    style={{ gridAutoRows: '1fr' }}
                 >
                     {cards.map((card, index) => {
                         const row = Math.floor(index / cols);
