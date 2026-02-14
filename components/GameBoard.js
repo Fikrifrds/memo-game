@@ -341,6 +341,13 @@ export default function GameBoard() {
     const [flipCounts, setFlipCounts] = useState({});
     const [showFlipCount, setShowFlipCount] = useState(false);
     const [cardEntryKey, setCardEntryKey] = useState(0);
+    const [vsComputer, setVsComputer] = useState(false);
+    const computerMemoryRef = useRef(new Map());
+    const [computerTurnInProgress, setComputerTurnInProgress] = useState(false);
+    const computerTimeoutRef = useRef(null);
+    const handleChoiceRef = useRef(null);
+    const computerPickCardRef = useRef(null);
+    const cardsRef = useRef([]);
     const [turnTimeLeft, setTurnTimeLeft] = useState(null);
     const turnTimerRef = useRef(null);
     const [streak, setStreak] = useState(0);
@@ -394,6 +401,10 @@ export default function GameBoard() {
             if (savedFlipCount !== null) {
                 setShowFlipCount(savedFlipCount === 'true');
             }
+            const savedVsComputer = localStorage.getItem('flipmatch-vs-computer');
+            if (savedVsComputer !== null) {
+                setVsComputer(savedVsComputer === 'true');
+            }
         } catch { /* ignore */ }
 
         try {
@@ -420,6 +431,7 @@ export default function GameBoard() {
             if (sg.matchKeepsTurn !== undefined) setMatchKeepsTurn(sg.matchKeepsTurn);
             if (sg.showCardNumbers !== undefined) setShowCardNumbers(sg.showCardNumbers);
             if (sg.showNames !== undefined) setShowNames(sg.showNames);
+            if (sg.vsComputer) setVsComputer(true);
 
             // Resume elapsed timer from saved offset
             const resumeOffset = sg.elapsedTime || 0;
@@ -564,19 +576,21 @@ export default function GameBoard() {
                 gameState, cards, turns, difficulty, theme,
                 playerNames, currentPlayerIndex, scores,
                 elapsedTime, turnTimerEnabled, turnTimerSeconds, matchKeepsTurn,
-                showCardNumbers, showNames,
+                showCardNumbers, showNames, vsComputer,
             }));
         } catch { /* ignore */ }
-    }, [gameState, cards, turns, currentPlayerIndex, scores, elapsedTime]);
+    }, [gameState, cards, turns, currentPlayerIndex, scores, elapsedTime, vsComputer]);
 
     const startGame = () => {
-        const trimmedNames = playerNames.map((n, i) => n.trim() || `Player ${i + 1}`);
+        const trimmedNames = playerNames.map((n, i) => n.trim() || (vsComputer && i === 1 ? "Computer" : `Player ${i + 1}`));
         setPlayerNames(trimmedNames);
-        setCurrentPlayerIndex(Math.floor(Math.random() * trimmedNames.length));
+        setCurrentPlayerIndex(vsComputer ? 0 : Math.floor(Math.random() * trimmedNames.length));
         setScores(new Array(trimmedNames.length).fill(0));
         setStreak(0);
         setStreakDisplay(null);
         lastMatchedStreakRef.current = 0;
+        computerMemoryRef.current = new Map();
+        setComputerTurnInProgress(false);
         shuffleCards();
         setGameState("playing");
         startTimer();
@@ -587,10 +601,13 @@ export default function GameBoard() {
         stopTimer();
         stopTurnTimer();
         setScores(new Array(playerNames.length).fill(0));
-        setCurrentPlayerIndex(Math.floor(Math.random() * playerNames.length));
+        setCurrentPlayerIndex(vsComputer ? 0 : Math.floor(Math.random() * playerNames.length));
         setStreak(0);
         setStreakDisplay(null);
         lastMatchedStreakRef.current = 0;
+        computerMemoryRef.current = new Map();
+        setComputerTurnInProgress(false);
+        if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
         shuffleCards();
         setGameState("playing");
         startTimer();
@@ -600,6 +617,8 @@ export default function GameBoard() {
         stopTimer();
         stopTurnTimer();
         clearSavedGame();
+        setComputerTurnInProgress(false);
+        if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
         setGameState("setup");
     };
 
@@ -617,6 +636,7 @@ export default function GameBoard() {
         }
         choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
     };
+    handleChoiceRef.current = handleChoice;
 
     const [matchFeedback, setMatchFeedback] = useState(null);
     const [clueDrawer, setClueDrawer] = useState(null);
@@ -624,6 +644,18 @@ export default function GameBoard() {
     useEffect(() => {
         if (choiceOne && choiceTwo) {
             setDisabled(true);
+
+            // Computer memory: record flipped cards (with 25% forget chance)
+            if (vsComputer) {
+                const mem = computerMemoryRef.current;
+                if (Math.random() > 0.25) {
+                    mem.set(choiceOne.id, { src: choiceOne.src, pairId: choiceOne.pairId });
+                }
+                if (Math.random() > 0.25) {
+                    mem.set(choiceTwo.id, { src: choiceTwo.src, pairId: choiceTwo.pairId });
+                }
+            }
+
             // Use pairId for learning themes, src for classic themes
             const isMatch = choiceOne.pairId
                 ? choiceOne.pairId === choiceTwo.pairId
@@ -686,6 +718,13 @@ export default function GameBoard() {
                     }
                 }
 
+                // Clean matched cards from computer memory
+                if (vsComputer) {
+                    const mem = computerMemoryRef.current;
+                    mem.delete(choiceOne.id);
+                    mem.delete(choiceTwo.id);
+                }
+
                 resetTurn(true);
             } else {
                 playWrongSound();
@@ -703,16 +742,160 @@ export default function GameBoard() {
         }
     }, [choiceOne, choiceTwo]);
 
+    const [computerTurnTrigger, setComputerTurnTrigger] = useState(0);
+
     const resetTurn = (matched) => {
         setChoiceOne(null);
         setChoiceTwo(null);
         setTurns((prevTurns) => prevTurns + 1);
         setDisabled(false);
+        setComputerTurnInProgress(false);
         if (!matched || !matchKeepsTurn) {
             setCurrentPlayerIndex((prev) => (prev + 1) % playerNames.length);
+        } else if (vsComputer && currentPlayerIndex === 1 && matched && matchKeepsTurn) {
+            // Computer matched with keep turn — bump trigger to re-fire computer turn
+            setComputerTurnTrigger(prev => prev + 1);
         }
         startTurnTimer();
     };
+
+    // Computer AI: pick a card based on memory
+    const computerPickCard = useCallback((excludeId) => {
+        const mem = computerMemoryRef.current;
+        const available = cards.filter(c => !c.matched && c.id !== excludeId);
+        if (available.length === 0) return null;
+
+        // If we have a first card (excludeId provided), try to find its match in memory
+        if (excludeId) {
+            const firstCard = cards.find(c => c.id === excludeId);
+            if (firstCard) {
+                const matchKey = firstCard.pairId || firstCard.src;
+                for (const [cardId, memData] of mem.entries()) {
+                    if (cardId === excludeId) continue;
+                    const card = cards.find(c => c.id === cardId);
+                    if (!card || card.matched) { mem.delete(cardId); continue; }
+                    const cardKey = memData.pairId || memData.src;
+                    if ((firstCard.pairId && cardKey === matchKey) || (!firstCard.pairId && cardKey === matchKey)) {
+                        return card;
+                    }
+                }
+            }
+            // No match found in memory — pick random
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        // First card: check if we know any complete pair in memory
+        const memEntries = Array.from(mem.entries()).filter(([id]) => {
+            const c = cards.find(card => card.id === id);
+            return c && !c.matched;
+        });
+
+        for (let i = 0; i < memEntries.length; i++) {
+            const [id1, data1] = memEntries[i];
+            const key1 = data1.pairId || data1.src;
+            for (let j = i + 1; j < memEntries.length; j++) {
+                const [, data2] = memEntries[j];
+                const key2 = data2.pairId || data2.src;
+                if (key1 === key2) {
+                    // Found a known pair! Return the first card of the pair
+                    return cards.find(c => c.id === id1);
+                }
+            }
+        }
+
+        // No known pair — pick random
+        return available[Math.floor(Math.random() * available.length)];
+    }, [cards]);
+    computerPickCardRef.current = computerPickCard;
+    cardsRef.current = cards;
+
+    // Trigger computer turn — uses refs to avoid re-triggering on cards/function changes
+    useEffect(() => {
+        if (!vsComputer || currentPlayerIndex !== 1 || gameState !== "playing") return;
+        // Check if all cards matched (game over)
+        const currentCards = cardsRef.current;
+        if (currentCards.length > 0 && currentCards.every(c => c.matched)) return;
+
+        // Clear any previous timeout
+        if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
+
+        const scheduleComputerTurn = () => {
+            setDisabled(true);
+            setComputerTurnInProgress(true);
+
+            // Natural thinking delays
+            let maxThink1 = 2000;
+            let maxThink2 = 1800;
+            if (turnTimerEnabled && turnTimerSeconds) {
+                maxThink1 = Math.min(2000, turnTimerSeconds * 350);
+                maxThink2 = Math.min(1800, turnTimerSeconds * 300);
+            }
+
+            // First card: scanning the board (0.8s - 2.0s)
+            const delay1 = 800 + Math.random() * (maxThink1 - 800);
+            computerTimeoutRef.current = setTimeout(() => {
+                const firstCard = computerPickCardRef.current(null);
+                if (!firstCard) return;
+                handleChoiceRef.current(firstCard);
+
+                // Second card: recall & decide (0.8s - 1.8s)
+                const delay2 = 800 + Math.random() * (maxThink2 - 800);
+                computerTimeoutRef.current = setTimeout(() => {
+                    const secondCard = computerPickCardRef.current(firstCard.id);
+                    if (!secondCard) return;
+                    handleChoiceRef.current(secondCard);
+                }, delay2);
+            }, delay1);
+        };
+
+        scheduleComputerTurn();
+
+        return () => {
+            if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPlayerIndex, vsComputer, gameState, turnTimerEnabled, turnTimerSeconds]);
+
+    // Handle computer keep-turn: re-trigger when computerTurnTrigger bumps
+    useEffect(() => {
+        if (!vsComputer || currentPlayerIndex !== 1 || gameState !== "playing") return;
+        if (computerTurnTrigger === 0) return; // skip initial mount
+
+        const currentCards = cardsRef.current;
+        if (currentCards.length > 0 && currentCards.every(c => c.matched)) return;
+
+        if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
+
+        setDisabled(true);
+        setComputerTurnInProgress(true);
+
+        // Shorter delay after a match — computer is "on a roll" (0.6s - 1.4s)
+        let maxThink1 = 1400;
+        let maxThink2 = 1200;
+        if (turnTimerEnabled && turnTimerSeconds) {
+            maxThink1 = Math.min(1400, turnTimerSeconds * 300);
+            maxThink2 = Math.min(1200, turnTimerSeconds * 250);
+        }
+
+        const delay1 = 600 + Math.random() * (maxThink1 - 600);
+        computerTimeoutRef.current = setTimeout(() => {
+            const firstCard = computerPickCardRef.current(null);
+            if (!firstCard) return;
+            handleChoiceRef.current(firstCard);
+
+            const delay2 = 600 + Math.random() * (maxThink2 - 600);
+            computerTimeoutRef.current = setTimeout(() => {
+                const secondCard = computerPickCardRef.current(firstCard.id);
+                if (!secondCard) return;
+                handleChoiceRef.current(secondCard);
+            }, delay2);
+        }, delay1);
+
+        return () => {
+            if (computerTimeoutRef.current) clearTimeout(computerTimeoutRef.current);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [computerTurnTrigger]);
 
     const [isNewBest, setIsNewBest] = useState(false);
     useEffect(() => {
@@ -1097,97 +1280,163 @@ export default function GameBoard() {
 
                         {/* RIGHT COLUMN: Players + Start */}
                         <div className="md:w-80 flex flex-col gap-3">
-                            {/* Player Header */}
-                            <div className="flex justify-between items-center">
-                                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                    Players ({playerNames.length}/{MAX_PLAYERS})
-                                </label>
-                                <div className="flex items-center gap-1">
-                                    {playerNames.length > 1 && (
-                                        <button
-                                            onClick={shufflePlayers}
-                                            className="flex items-center gap-1 px-2 py-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                            title="Shuffle order"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
-                                            </svg>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={addPlayer}
-                                        disabled={playerNames.length >= MAX_PLAYERS}
-                                        className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                            {/* VS Computer Toggle */}
+                            <button
+                                onClick={() => {
+                                    const newVal = !vsComputer;
+                                    setVsComputer(newVal);
+                                    try { localStorage.setItem('flipmatch-vs-computer', String(newVal)); } catch { /* ignore */ }
+                                    if (newVal) {
+                                        setPlayerNames([playerNames[0] || "Player 1", "Computer"]);
+                                    } else {
+                                        setPlayerNames([playerNames[0] || "Player 1", "Player 2"]);
+                                    }
+                                }}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 ${vsComputer
+                                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-400 dark:border-purple-600'
+                                    : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${vsComputer ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                         </svg>
-                                        Add
-                                    </button>
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={`text-sm font-bold ${vsComputer ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}>VS Computer</div>
+                                        <div className="text-[11px] text-gray-500 dark:text-gray-400">{vsComputer ? 'Challenge the AI' : 'Play with friends'}</div>
+                                    </div>
                                 </div>
-                            </div>
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${vsComputer ? 'bg-purple-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                    {vsComputer ? 'ON' : 'OFF'}
+                                </span>
+                            </button>
 
-                            {/* Player List (scrollable) */}
-                            <div className="space-y-1.5 max-h-[400px] overflow-y-auto flex-1 pr-0.5">
-                                {playerNames.map((name, index) => (
-                                    <div
-                                        key={index}
-                                        className="group flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200/60 dark:border-gray-600/30 hover:border-gray-300 dark:hover:border-gray-500/30 transition-colors"
-                                    >
-                                        {/* Reorder buttons */}
-                                        <div className="flex flex-col flex-shrink-0 gap-0.5">
-                                            <button
-                                                onClick={() => movePlayer(index, -1)}
-                                                disabled={index === 0}
-                                                className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => movePlayer(index, 1)}
-                                                disabled={index === playerNames.length - 1}
-                                                className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                        </div>
-
-                                        <div className={`flex-shrink-0 w-9 h-9 rounded-full ${PLAYER_COLORS[index % PLAYER_COLORS.length].bg} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                                            {index + 1}
-                                        </div>
+                            {vsComputer ? (
+                                /* VS Computer: simplified player display */
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Players</label>
+                                    {/* Human Player */}
+                                    <div className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200/60 dark:border-gray-600/30">
+                                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">1</div>
                                         <input
-                                            ref={index === playerNames.length - 1 ? newPlayerRef : null}
                                             type="text"
-                                            value={name}
-                                            onChange={(e) => updatePlayerName(index, e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter") {
-                                                    e.preventDefault();
-                                                    addPlayer();
-                                                }
-                                            }}
+                                            value={playerNames[0]}
+                                            onChange={(e) => updatePlayerName(0, e.target.value)}
                                             onFocus={(e) => e.target.select()}
                                             className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none text-sm font-medium transition-colors text-slate-800 dark:text-slate-100"
-                                            placeholder={`Player ${index + 1}`}
+                                            placeholder="Your name"
                                             maxLength={20}
                                         />
-                                        {playerNames.length > 1 && (
+                                    </div>
+                                    <div className="flex items-center justify-center text-xs font-bold text-gray-400 dark:text-gray-500">VS</div>
+                                    {/* Computer Player */}
+                                    <div className="flex items-center gap-2 p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-300 dark:border-purple-700">
+                                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-purple-500 flex items-center justify-center text-white shadow-sm">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">Computer</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Normal multiplayer UI */
+                                <>
+                                    {/* Player Header */}
+                                    <div className="flex justify-between items-center">
+                                        <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                                            Players ({playerNames.length}/{MAX_PLAYERS})
+                                        </label>
+                                        <div className="flex items-center gap-1">
+                                            {playerNames.length > 1 && (
+                                                <button
+                                                    onClick={shufflePlayers}
+                                                    className="flex items-center gap-1 px-2 py-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                    title="Shuffle order"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => removePlayer(index)}
-                                                className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                                onClick={addPlayer}
+                                                disabled={playerNames.length >= MAX_PLAYERS}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                                                 </svg>
+                                                Add
                                             </button>
-                                        )}
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
+
+                                    {/* Player List (scrollable) */}
+                                    <div className="space-y-1.5 max-h-[400px] overflow-y-auto flex-1 pr-0.5">
+                                        {playerNames.map((name, index) => (
+                                            <div
+                                                key={index}
+                                                className="group flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200/60 dark:border-gray-600/30 hover:border-gray-300 dark:hover:border-gray-500/30 transition-colors"
+                                            >
+                                                {/* Reorder buttons */}
+                                                <div className="flex flex-col flex-shrink-0 gap-0.5">
+                                                    <button
+                                                        onClick={() => movePlayer(index, -1)}
+                                                        disabled={index === 0}
+                                                        className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => movePlayer(index, 1)}
+                                                        disabled={index === playerNames.length - 1}
+                                                        className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors p-0.5 leading-none"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                <div className={`flex-shrink-0 w-9 h-9 rounded-full ${PLAYER_COLORS[index % PLAYER_COLORS.length].bg} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
+                                                    {index + 1}
+                                                </div>
+                                                <input
+                                                    ref={index === playerNames.length - 1 ? newPlayerRef : null}
+                                                    type="text"
+                                                    value={name}
+                                                    onChange={(e) => updatePlayerName(index, e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            addPlayer();
+                                                        }
+                                                    }}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 outline-none text-sm font-medium transition-colors text-slate-800 dark:text-slate-100"
+                                                    placeholder={`Player ${index + 1}`}
+                                                    maxLength={20}
+                                                />
+                                                {playerNames.length > 1 && (
+                                                    <button
+                                                        onClick={() => removePlayer(index)}
+                                                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
 
                             {/* Start Game Button */}
                             <button
@@ -1481,26 +1730,42 @@ export default function GameBoard() {
                             {playerNames.map((name, index) => {
                                 const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
                                 const isActive = index === currentPlayerIndex;
+                                const isComputerPlayer = vsComputer && index === 1;
                                 return (
                                     <div
                                         key={index}
                                         className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-300 border ${isActive
-                                            ? `${color.bg} border-white/30 shadow-md text-white`
-                                            : `bg-white/80 dark:bg-gray-800 ${color.border} dark:border-gray-700 opacity-50`
+                                            ? isComputerPlayer
+                                                ? 'bg-purple-500 border-white/30 shadow-md text-white'
+                                                : `${color.bg} border-white/30 shadow-md text-white`
+                                            : `bg-white/80 dark:bg-gray-800 ${isComputerPlayer ? 'border-purple-300 dark:border-purple-700' : `${color.border} dark:border-gray-700`} opacity-50`
                                             }`}
                                     >
-                                        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isActive
-                                            ? "bg-white/25 text-white"
-                                            : `${color.bg} text-white`
-                                            }`}>
-                                            {index + 1}
-                                        </div>
-                                        <span className={`text-xs font-medium truncate max-w-[60px] ${isActive ? "text-white" : `${color.text} dark:text-gray-300`}`}>
+                                        {isComputerPlayer ? (
+                                            <svg className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-purple-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        ) : (
+                                            <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isActive
+                                                ? "bg-white/25 text-white"
+                                                : `${color.bg} text-white`
+                                                }`}>
+                                                {index + 1}
+                                            </div>
+                                        )}
+                                        <span className={`text-xs font-medium truncate max-w-[60px] ${isActive ? "text-white" : isComputerPlayer ? 'text-purple-600 dark:text-purple-300' : `${color.text} dark:text-gray-300`}`}>
                                             {name}
                                         </span>
                                         <span className={`text-xs font-black ${isActive ? "text-white" : "text-gray-800 dark:text-white"}`}>
                                             {scores[index]}
                                         </span>
+                                        {isComputerPlayer && isActive && computerTurnInProgress && (
+                                            <span className="flex items-center gap-[3px] ml-0.5">
+                                                <span className="w-1 h-1 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.8s' }} />
+                                                <span className="w-1 h-1 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.8s' }} />
+                                                <span className="w-1 h-1 rounded-full bg-white/80 animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.8s' }} />
+                                            </span>
+                                        )}
                                     </div>
                                 );
                             })}
