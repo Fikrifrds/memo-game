@@ -104,11 +104,11 @@ const EMOJI_LABELS = {
         '🦩': 'Flamingo', '🐧': 'Penguin', '🐺': 'Serigala', '🦇': 'Kelelawar',
         // Food
         '🍕': 'Pizza', '🍔': 'Burger', '🌮': 'Taco', '🍜': 'Mie',
-        '🍣': 'Sushi', '🧁': 'Cupcake', '🎂': 'Kue', '🍩': 'Donat',
-        '🍪': 'Kukis', '🥐': 'Croissant', '🥯': 'Bagel', '🧇': 'Wafel',
-        '🥞': 'Panekuk', '🍰': 'Kue Pendek', '🥧': 'Pai', '🍫': 'Cokelat',
+        '🍣': 'Sushi', '🧁': 'Kue Mangkuk', '🎂': 'Kue', '🍩': 'Donat',
+        '🍪': 'Kukis', '🥐': 'Croissant', '🥯': 'Roti Bagel', '🧇': 'Wafel',
+        '🥞': 'Panekuk', '🍰': 'Kue Potong', '🥧': 'Pai', '🍫': 'Cokelat',
         '☕': 'Kopi', '🧃': 'Jus', '🥤': 'Minuman', '🍵': 'Teh',
-        '🧈': 'Mentega', '🥨': 'Pretzel', '🥖': 'Roti', '🍿': 'Popcorn',
+        '🧈': 'Mentega', '🥨': 'Pretsel', '🥖': 'Roti', '🍿': 'Berondong Jagung',
         // Ocean
         '🐙': 'Gurita', '🦑': 'Cumi', '🐠': 'Ikan Tropis',
         '🐡': 'Ikan Buntal', '🐳': 'Paus Biru', '🦐': 'Udang',
@@ -123,9 +123,9 @@ const EMOJI_LABELS = {
         '🏓': 'Tenis Meja', '🏸': 'Bulu Tangkis', '🥊': 'Tinju', '🥋': 'Bela Diri',
         '🥅': 'Gawang', '🏹': 'Panahan', '🥇': 'Emas', '🥈': 'Perak',
         '🥉': 'Perunggu', '🏅': 'Medali', '🎿': 'Ski', '🛷': 'Kereta Luncur',
-        '⛸️': 'Sepatu Es', '🥏': 'Frisbee', '🪃': 'Bumerang', '🏏': 'Kriket',
+        '⛸️': 'Sepatu Es', '🥏': 'Piring Terbang', '🪃': 'Bumerang', '🏏': 'Kriket',
         // Flags
-        '🏁': 'Finish', '🚩': 'Bendera', '🇲🇾': 'Malaysia', '🏴': 'Bendera Hitam',
+        '🏁': 'Garis Finis', '🚩': 'Bendera', '🇲🇾': 'Malaysia', '🏴': 'Bendera Hitam',
         '🏳️': 'Bendera Putih', '🇺🇸': 'Amerika', '🇬🇧': 'Inggris', '🇫🇷': 'Prancis',
         '🇩🇪': 'Jerman', '🇯🇵': 'Jepang', '🇰🇷': 'Korea', '🇨🇳': 'Tiongkok',
         '🇮🇳': 'India', '🇧🇷': 'Brasil', '🇦🇺': 'Australia', '🇨🇦': 'Kanada',
@@ -144,6 +144,7 @@ const EMOJI_LABELS = {
 const THEMES = {
     farm: {
         name: "Farm",
+        nameId: "Peternakan",
         icon: "🐄",
         cards: [
             { src: "🐄", matched: false }, { src: "🐔", matched: false }, { src: "🦢", matched: false }, { src: "🐑", matched: false },
@@ -156,6 +157,7 @@ const THEMES = {
     },
     garden: {
         name: "Garden",
+        nameId: "Taman",
         icon: "🌻",
         cards: [
             { src: "🌻", matched: false }, { src: "🌷", matched: false }, { src: "🌹", matched: false }, { src: "🌺", matched: false },
@@ -168,6 +170,7 @@ const THEMES = {
     },
     fruits: {
         name: "Fruits",
+        nameId: "Buah",
         icon: "🍎",
         cards: [
             { src: "🍎", matched: false }, { src: "🍌", matched: false }, { src: "🍇", matched: false }, { src: "🍊", matched: false },
@@ -180,6 +183,7 @@ const THEMES = {
     },
     animals: {
         name: "Animals",
+        nameId: "Hewan",
         icon: "🦊",
         cards: [
             { src: "🦊", matched: false }, { src: "🐻", matched: false }, { src: "🐼", matched: false }, { src: "🐨", matched: false },
@@ -192,6 +196,7 @@ const THEMES = {
     },
     food: {
         name: "Food",
+        nameId: "Makanan",
         icon: "🍕",
         cards: [
             { src: "🍕", matched: false }, { src: "🍔", matched: false }, { src: "🌮", matched: false }, { src: "🍜", matched: false },
@@ -204,6 +209,7 @@ const THEMES = {
     },
     ocean: {
         name: "Ocean",
+        nameId: "Laut",
         icon: "🐙",
         cards: [
             { src: "🐙", matched: false }, { src: "🦑", matched: false }, { src: "🐠", matched: false }, { src: "🐡", matched: false },
@@ -216,6 +222,7 @@ const THEMES = {
     },
     sports: {
         name: "Sports",
+        nameId: "Olahraga",
         icon: "⚽",
         cards: [
             { src: "⚽", matched: false }, { src: "🏀", matched: false }, { src: "🏈", matched: false }, { src: "⚾", matched: false },
@@ -228,6 +235,7 @@ const THEMES = {
     },
     flags: {
         name: "Flags",
+        nameId: "Bendera",
         icon: "🏁",
         cards: [
             { src: "🏁", matched: false }, { src: "🚩", matched: false }, { src: "🇲🇾", matched: false }, { src: "🏴", matched: false },
@@ -240,6 +248,7 @@ const THEMES = {
     },
     transport: {
         name: "Transport",
+        nameId: "Transportasi",
         icon: "🚗",
         cards: [
             { src: "🚗", matched: false }, { src: "🚕", matched: false }, { src: "🚌", matched: false }, { src: "🚎", matched: false },
@@ -333,7 +342,7 @@ export default function GameBoard() {
     const [turnTimerSeconds, setTurnTimerSeconds] = useState(30);
     const [soundEnabled, setSoundEnabledState] = useState(true);
     const [soundVolume, setSoundVolumeState] = useState(100);
-    const [matchKeepsTurn, setMatchKeepsTurn] = useState(true);
+    const [matchKeepsTurn, setMatchKeepsTurn] = useState(false);
     const [showCardNumbers, setShowCardNumbers] = useState(true);
     const [showNames, setShowNames] = useState(true);
     const [speakOnFlip, setSpeakOnFlip] = useState(false);
@@ -1029,7 +1038,7 @@ export default function GameBoard() {
                             {/* Difficulty Selection */}
                             <div className="space-y-2.5">
                                 <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                    Difficulty
+                                    {cardLang === "id" ? "Tingkat Kesulitan" : "Difficulty"}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {Object.entries(DIFFICULTIES).map(([diff, config]) => (
@@ -1055,7 +1064,7 @@ export default function GameBoard() {
                             {/* Theme Selection */}
                             <div className="space-y-2.5">
                                 <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                    Theme
+                                    {cardLang === "id" ? "Tema" : "Theme"}
                                 </label>
                                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                     {Object.entries(THEMES).map(([key, themeData]) => (
@@ -1069,7 +1078,7 @@ export default function GameBoard() {
                                         >
                                             <div className="text-2xl sm:text-3xl mb-0.5">{themeData.icon}</div>
                                             <div className={`text-xs font-semibold ${theme === key ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'}`}>
-                                                {themeData.name}
+                                                {cardLang === "id" ? themeData.nameId : themeData.name}
                                             </div>
                                         </button>
                                     ))}
@@ -1079,11 +1088,12 @@ export default function GameBoard() {
                             {/* Settings Row */}
                             <div className="space-y-2.5">
                                 <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                    Settings
+                                    {cardLang === "id" ? "Pengaturan" : "Settings"}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {/* Turn Timer */}
                                     <button
+                                        title="Set a time limit for each turn. When time runs out, turn switches to the next player."
                                         onClick={() => setTurnTimerEnabled(!turnTimerEnabled)}
                                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${turnTimerEnabled
                                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
@@ -1101,6 +1111,7 @@ export default function GameBoard() {
 
                                     {/* Sound */}
                                     <button
+                                        title="Enable or disable sound effects for card flips, matches, and other game events."
                                         onClick={() => {
                                             const newVal = !soundEnabled;
                                             setSoundEnabledState(newVal);
@@ -1127,6 +1138,7 @@ export default function GameBoard() {
 
                                     {/* On Match */}
                                     <button
+                                        title="KEEP: player gets another turn after a match. SWITCH: turn always passes to the next player."
                                         onClick={() => {
                                             const newVal = !matchKeepsTurn;
                                             setMatchKeepsTurn(newVal);
@@ -1153,6 +1165,7 @@ export default function GameBoard() {
                                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                     {/* Card Numbers */}
                                     <button
+                                        title="Show numbers on the back of cards to help identify positions."
                                         onClick={() => {
                                             const newVal = !showCardNumbers;
                                             setShowCardNumbers(newVal);
@@ -1174,6 +1187,7 @@ export default function GameBoard() {
 
                                     {/* Show Names */}
                                     <button
+                                        title="Display emoji names below each card when flipped."
                                         onClick={() => {
                                             const newVal = !showNames;
                                             setShowNames(newVal);
@@ -1195,11 +1209,15 @@ export default function GameBoard() {
 
                                     {/* Speak Card */}
                                     <button
+                                        title="Read card names aloud using text-to-speech when cards are flipped."
                                         onClick={() => {
                                             const newVal = !speakOnFlip;
                                             setSpeakOnFlip(newVal);
                                             try { localStorage.setItem('flipmatch-speak-on-flip', String(newVal)); } catch { /* ignore */ }
-                                            if (newVal) speak(cardLang === "id" ? "Sapi" : "Cow", cardLang === "id" ? "id-ID" : "en-US");
+                                            if (newVal) {
+                                                const themeLabel = cardLang === "id" ? THEMES[theme].nameId : THEMES[theme].name;
+                                                speak(themeLabel, cardLang === "id" ? "id-ID" : "en-US");
+                                            }
                                         }}
                                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${speakOnFlip
                                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
@@ -1217,6 +1235,7 @@ export default function GameBoard() {
 
                                     {/* Flip Counter */}
                                     <button
+                                        title="Show how many times each card has been flipped on its back."
                                         onClick={() => {
                                             const newVal = !showFlipCount;
                                             setShowFlipCount(newVal);
@@ -1238,6 +1257,7 @@ export default function GameBoard() {
 
                                     {/* Language Toggle */}
                                     <button
+                                        title="Switch card names and speech between English and Indonesian."
                                         onClick={() => {
                                             const newLang = cardLang === "en" ? "id" : "en";
                                             setCardLang(newLang);
@@ -1316,7 +1336,7 @@ export default function GameBoard() {
                             {vsComputer ? (
                                 /* VS Computer: simplified player display */
                                 <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Players</label>
+                                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{cardLang === "id" ? "Pemain" : "Players"}</label>
                                     {/* Human Player */}
                                     <div className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200/60 dark:border-gray-600/30">
                                         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">1</div>
@@ -1347,7 +1367,7 @@ export default function GameBoard() {
                                     {/* Player Header */}
                                     <div className="flex justify-between items-center">
                                         <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                            Players ({playerNames.length}/{MAX_PLAYERS})
+                                            {cardLang === "id" ? "Pemain" : "Players"} ({playerNames.length}/{MAX_PLAYERS})
                                         </label>
                                         <div className="flex items-center gap-1">
                                             {playerNames.length > 1 && (
